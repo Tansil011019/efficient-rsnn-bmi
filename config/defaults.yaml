@@ -7,3 +7,5 @@ node: False
 train_monkeys:
   - loco
   - indy
+
+seed: False

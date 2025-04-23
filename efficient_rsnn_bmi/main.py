@@ -6,11 +6,9 @@ import torch
 import numpy as np
 from data.neurobench.dataloader import get_dataloader
 
-# TO-DO: make custom logging class
-import logging
+from efficient_rsnn_bmi.utils.logger import get_logger
 
-logging.basicConfig()
-logger = logging.getLogger("train-tinyRSNN")
+logger = get_logger("train-tinyRSNN")
 
 @hydra.main(version_base=None, config_path="../config", config_name="defaults")
 def train_rsnn_tiny(cfg: DictConfig):
@@ -33,7 +31,7 @@ def train_rsnn_tiny(cfg: DictConfig):
             torch.backends.cudnn.benchmark = False # Disables cuDNN’s automatic selection of the fastest computation method
 
     # Get DataLoader
-    dataloader = get_dataloader()
+    dataloader = get_dataloader(cfg, dtype=dtype)
     
 if __name__ == "__main__":
     train_rsnn_tiny()

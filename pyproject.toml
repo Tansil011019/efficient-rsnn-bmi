@@ -12,7 +12,8 @@ dependencies = [
     "omegaconf",
     "h5py",
     "hydra-core",
-    "neurobench"
+    "neurobench",
+    "stork"
 ]
 requires-python = ">=3.10"
 authors = [
@@ -33,7 +34,7 @@ Documentation = "https://github.com/Tansil011019/efficient-rsnn-bmi.git"
 Issues = "https://github.com/Tansil011019/efficient-rsnn-bmi.git/issues"
 
 [tool.hatch.version]
-path = "efficient-rsnn-bmi/__version__.py"
+path = "efficient_rsnn_bmi/__version__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/"]

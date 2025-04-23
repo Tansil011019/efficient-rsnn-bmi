@@ -1,0 +1,15 @@
+filename: indy_20170131_02.mat
+data_dir: /home/cc/efficient-rsnn-bmi/data/datasets
+
+val_ratio: 0.1  # Ratio of validation set. 
+random_val: False
+
+extend_data: True
+sample_duration: 2.0
+
+remove_segments_inactive: False  
+
+# Data augmentation
+p_drop: 0.0  # Probability of dropping a spike
+p_insert: 0.0  # Probability of inserting a spike
+jitter_sigma: 0.0  # Jitter sigma (in number of time steps)

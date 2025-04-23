@@ -22,6 +22,7 @@ else
     exit 1
 fi
 
+python3 -m ensurepip --upgrade
 pip install --upgrade pip
 python3 -m pip install --require-virtualenv -e "."
 

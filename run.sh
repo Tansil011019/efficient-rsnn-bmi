@@ -3,7 +3,7 @@
 # Stop script on error
 set -e
 
-entrypoint="efficient-rsnn-bmi.main"
+entrypoint="efficient_rsnn_bmi.main"
 extra_args=()
 
 while [[ $# -gt 0 ]]; do
