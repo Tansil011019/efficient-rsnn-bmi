@@ -4,22 +4,21 @@ import numpy as np
 import stork
 
 from neurobench.datasets.primate_reaching import PrimateReaching
-from neurobench.datasets.utils import download_url
 
 from data.config.dataloader import DatasetLoaderConfig
-from urllib.error import URLError
 
-import os
 import math
 
 from efficient_rsnn_bmi.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def get_dataloader(cfg, dtype=torch.float32):
+def get_dataloader(cfg: DatasetLoaderConfig, dtype: torch.dtype = torch.float32) -> Dataset:
     logger.info("Loading dataset...")
     logger.info(f"Dataset config: {cfg}")
-    # dataloader = DatasetLoader()
+    dataloader = DatasetLoader(config=cfg)
+    logger.info("Dataset loaded")
+    return dataloader
 
 class DatasetLoader(Dataset):
     """

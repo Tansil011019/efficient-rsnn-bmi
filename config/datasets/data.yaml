@@ -1,9 +1,11 @@
 filename: indy_20170131_02.mat
-data_dir: /home/cc/efficient-rsnn-bmi/data/datasets
+file_path: /home/cc/efficient-rsnn-bmi/data/datasets
 
+train_ratio: 0.8  # Ratio of training set.
 val_ratio: 0.1  # Ratio of validation set. 
 random_val: False
 
+stride: 0.004  # Time step of the data
 extend_data: True
 sample_duration: 2.0
 
