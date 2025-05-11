@@ -3,10 +3,12 @@ defaults:
   - pretrain_filenames: all-filenames
   - _self_
 
-file_path: /home/cc/efficient-rsnn-bmi/data/datasets
+data_dir: /home/cc/efficient-rsnn-bmi/data/datasets
 
-train_ratio: 0.8  # Ratio of training set.
-val_ratio: 0.1  # Ratio of validation set. 
+dt: 4e-3  # Time step (seconds)
+
+# train_ratio: 0.8  # Ratio of training set.
+ratio_val: 0.1 # Ratio of validation set. 
 random_val: False
 
 nb_outputs: 2  # Number of outputs

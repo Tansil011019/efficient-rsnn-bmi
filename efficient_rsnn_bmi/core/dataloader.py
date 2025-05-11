@@ -8,11 +8,21 @@ from efficient_rsnn_bmi.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def get_dataloader(cfg: DatasetLoaderConfig, dtype: torch.dtype = torch.float32) -> Dataset:
-    logger.info("Loading dataset...")
-    logger.info(f"Dataset config: {cfg}")
-    dataloader = DatasetLoader(config=cfg)
-    logger.info("Dataset loaded")
+def get_dataloader(cfg, dtype=torch.float32):
+
+    dataloader = DatasetLoader(
+        basepath=cfg.datasets.data_dir,
+        ratio_val=cfg.datasets.ratio_val,
+        random_val=cfg.datasets.random_val,
+        extend_data=cfg.datasets.extend_data,
+        sample_duration=cfg.datasets.sample_duration,
+        remove_segments_inactive=cfg.datasets.remove_segments_inactive,
+        p_drop=cfg.datasets.p_drop,
+        p_insert=cfg.datasets.p_insert,
+        jitter_sigma=cfg.datasets.jitter_sigma,
+        dtype=dtype
+    )
+
     return dataloader
 
 def compute_input_firing_rates(data, cfg):

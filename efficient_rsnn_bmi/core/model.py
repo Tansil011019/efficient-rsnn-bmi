@@ -77,7 +77,7 @@ def get_model (cfg, nb_inputs, dtype, data=None):
             connection_kwargs={}
         )
 
-        current_src_grp = hidden_layer
+        current_src_grp = hidden_layer.output_group
 
         hidden_init.initialize(hidden_layer)
 
@@ -109,6 +109,9 @@ def get_model (cfg, nb_inputs, dtype, data=None):
                 )
             )
 
+            print("Readout group shape: ", readout_group.shape)
+            print("Current source group shape: ", current_src_grp.shape)
+            print(current_src_grp, readout_group)
             con_ro = model.add_connection(
                 Connection(current_src_grp, readout_group, dtype=dtype)
             )

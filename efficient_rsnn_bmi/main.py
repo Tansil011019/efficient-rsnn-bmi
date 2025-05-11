@@ -44,7 +44,7 @@ def train_rsnn_tiny(cfg: DictConfig):
 
     logger.info(f"Config: {cfg}")
     # Get DataLoader
-    dataloader = get_dataloader(from_config(cfg.datasets, DatasetLoaderConfig), dtype=dtype)
+    dataloader = get_dataloader(cfg, dtype=dtype)
 
     for monkey_name in cfg.train_monkeys:
         nb_inputs = cfg.datasets.nb_inputs[monkey_name]

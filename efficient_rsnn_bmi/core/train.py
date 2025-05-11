@@ -39,7 +39,7 @@ def configure_model(model, cfg, train_data, dtype):
         optimizer_kwargs=opt_kwargs,
         scheduler=scheduler,
         scheduler_kwargs=scheduler_kwargs,
-        time_step=cfg.data.dt,
+        time_step=cfg.datasets.dt,
     )
 
     return model
