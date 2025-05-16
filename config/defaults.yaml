@@ -16,7 +16,7 @@ dtype: 'float32'
 device: "cuda"
 nb_workers: 2
 
-pretraining: True
+pretraining: False
 
 # If pretraining is False, you can set the load_state to a path to load a pre-trained model for each monkey
 # If state is not found, a model will be trained from scratch on each session

@@ -66,6 +66,7 @@ def train_rsnn_tiny(cfg: DictConfig):
             pretrain_dat, pretrain_val_dat, _ = dataloader.get_multiple_sessions_data(
                 filename
             )
+            # logger.info(f"Pretraining data loaded. {pretrain_dat.shape}, {pretrain_val_dat.shape}")
 
             model = get_model(cfg, nb_inputs=nb_inputs, dtype=dtype, data=pretrain_dat)
             logger.info(f"Model constructed. {model}")
