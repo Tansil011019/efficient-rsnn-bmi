@@ -42,6 +42,9 @@ class BaselineRecurrentSpikingModel(RecurrentSpikingModel):
             self.scheduler_instance.step()
 
         return np.mean(np.array(metrics), axis=0)
+
+    def forward(self, x):
+        return self.forward_pass(x, cur_batch_size=len(x))
     
     def fit_validate_masked(
         self, 

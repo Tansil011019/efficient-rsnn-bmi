@@ -40,6 +40,7 @@ def compute_input_firing_rates(data, cfg):
     mean2 /= len(data)
 
     # For LOCO
+    print (data[0][0].shape)
     if data[0][0].shape[1] == 192:
         return mean1, mean2
 

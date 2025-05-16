@@ -213,6 +213,11 @@ class DatasetLoader:
         labels_val = labels[ind_val]
         labels_test = labels_testdat[dataset_test.ind_test]
 
+        # print("Spliting data into train, val and test...")
+        # print(spikes_train.shape)
+        # print(spikes_val.shape)
+        # print(spikes_test.shape)
+
         # split val and train data into single samples
         if self.extend_data:
             logger.info("Extending data...")
@@ -276,6 +281,10 @@ class DatasetLoader:
             ds_valid.append(monkey_ds_valid)
             ds_test.append(monkey_ds_test)
 
+        # print("Train dataset size: ", len(ds_train), len(ds_train[0]))
+        # print("Train dataset shape: ", ds_train[0][0][0].shape)
+        # print("Validation dataset size: ", len(ds_valid))
+        # print("Test dataset size: ", len(ds_test))
         dataset_train = torch.utils.data.ConcatDataset(ds_train)
         dataset_valid = torch.utils.data.ConcatDataset(ds_valid)
 
@@ -298,8 +307,15 @@ class DatasetLoader:
                 self.n_time_steps, curr_spikes.shape[0], self.n_time_steps
             )
 
+            # print("Splitting spikes into chunks of size ", self.n_time_steps)
+            # print("Current spikes shape: ", curr_spikes.shape)
+            # print("Current labels shape: ", curr_labels.shape)
+            # print("Splitting at: ", splitter)
+
             extended_spikes += np.split(curr_spikes, splitter)[:-1]
             extended_labels += np.split(curr_labels, splitter)[:-1]
+
+            # break
 
         extended_spikes = torch.stack(extended_spikes)
         extended_labels = torch.stack(extended_labels)

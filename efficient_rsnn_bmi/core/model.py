@@ -37,11 +37,14 @@ def get_model (cfg, nb_inputs, dtype, data=None):
 
     regularizers = get_regularizers(cfg)
 
+    logger.info(f"data: {data}")
+
     if data is not None:
         mean1, mean2 = compute_input_firing_rates(data, cfg)
     else:
         mean1 = None
 
+    print('This is mean')
     print(mean1, mean2)
     hidden_init, readout_init = get_initializers(cfg, mean1, dtype)
 
@@ -83,7 +86,7 @@ def get_model (cfg, nb_inputs, dtype, data=None):
 
         if i == 0 and nb_inputs == 192 and data is not None:
             with torch.no_grad():
-                hidden_layer.connections[0].op.weights[:, :96] /= mean2 / mean1
+                hidden_layer.connections[0].get_weights()[:, :96] /= mean2 / mean1
 
         if cfg.model.multiple_readouts:
             logger.info("Adding custom readout groups")

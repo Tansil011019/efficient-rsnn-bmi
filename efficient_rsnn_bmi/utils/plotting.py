@@ -168,7 +168,9 @@ def plot_activity_CST(
     #print("plotting CST snapshot")
 
     # Run model once and get activities
+    print(f"Evaluating model... {data[0][0].shape}")
     scores = model.evaluate(data)
+    print("This is the score", scores)
 
     inp = model.input_group.get_flattened_out_sequence().detach().cpu().numpy()
     hidden_groups = model.groups[1:-1]

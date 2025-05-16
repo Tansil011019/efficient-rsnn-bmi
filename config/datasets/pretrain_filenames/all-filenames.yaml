@@ -1,11 +1,11 @@
 indy:
-  session01: "indy_20160407_02.mat"
-  # session02: "indy_20160411_01.mat"
-  # session03: "indy_20160411_02.mat"
-  # session04: "indy_20160418_01.mat"
-  # session05: "indy_20160419_01.mat"
-  # session06: "indy_20160420_01.mat"
-  # session07: "indy_20160426_01.mat"
+  session01: "indy_20160407_02.mat" # 192 channels
+  # session02: "indy_20160411_01.mat" # 192 channels
+  # session03: "indy_20160411_02.mat" # 192 channels
+  # session04: "indy_20160418_01.mat" # 192 channels
+  # session05: "indy_20160419_01.mat" # 192 channels
+  # session06: "indy_20160420_01.mat" # 192 channels
+  # session07: "indy_20160426_01.mat" # 192 channels
   # session08: "indy_20160622_01.mat"
   # session09: "indy_20160624_03.mat"
   # session10: "indy_20160627_01.mat"

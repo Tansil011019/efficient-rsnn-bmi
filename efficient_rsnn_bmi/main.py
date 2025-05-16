@@ -51,17 +51,25 @@ def train_rsnn_tiny(cfg: DictConfig):
         logger.info(f"Training on monkey: {monkey_name}")
 
         if cfg.pretraining:
+            logger.info("=" * 50)
+            logger.info("Pretraining on " + monkey_name + "...")
+            logger.info("=" * 50)
+
             filename = list(cfg.datasets.pretrain_filenames[monkey_name].values())
+            logger.info(f"Loading pretraining data for {filename} ...")
 
             logger.info("Constructing model for " + monkey_name + " pretraining...")
             pretrain_dat, pretrain_val_dat, _ = dataloader.get_multiple_sessions_data(
                 filename
             )
+            # logger.info(f"Pretraining data loaded. {pretrain_dat.shape}, {pretrain_val_dat.shape}")
 
             model = get_model(cfg, nb_inputs=nb_inputs, dtype=dtype, data=pretrain_dat)
+            logger.info(f"Model constructed. {model}")
 
             logger.info("Configuring model...")
             model = configure_model(model, cfg, pretrain_dat, dtype)
+            logger.info(f"Model configured. {model}")
 
             logger.info("Pretraining on all {} sessions...".format(monkey_name))
             model, history = train_validate_model(
@@ -101,12 +109,14 @@ def train_rsnn_tiny(cfg: DictConfig):
 
 
         for session_name, filename in cfg.datasets.filenames[monkey_name].items():
+            logger.info("=" * 50)
+            logger.info("Training on " + session_name + "...")
+            logger.info("=" * 50)
 
-            logger.info("=" * 50)
             logger.info("Constructing model for " + session_name + "...")
-            logger.info("=" * 50)
 
             train_dat, val_dat, test_dat = dataloader.get_single_session_data(filename)
+            # print(f"train_dat: {train_dat[0]}, \nval_dat: {val_dat[0]}, \ntest_dat: {test_dat[0]}")
             model = get_model(cfg, nb_inputs=nb_inputs, dtype=dtype, data=train_dat)
 
             logger.info("Configuring model...")
@@ -181,8 +191,9 @@ def train_rsnn_tiny(cfg: DictConfig):
             
         logger.info("Saved model state.")
 
-
+        logger.info("=" * 50)
         logger.info("Evaluating model...")
+        logger.info("=" * 50)
 
         if cfg.plotting.plot_cumulative_mse:
             fig, ax = plot_cumulative_mse(

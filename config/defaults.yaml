@@ -12,17 +12,16 @@ experiment: "neurobench"
 
 dtype: 'float32'
 node: False
-device: "cuda"
+device: "cpu"
 nb_workers: 2
 
-pretraining: True
+pretraining: False
 
 # If pretraining is False, you can set the load_state to a path to load a pre-trained model for each monkey
 # If state is not found, a model will be trained from scratch on each session
 load_state: 
   loco: False
-  indy: False
-
+  indy: "../efficient-rsnn-bmi/baselineRSNN-pretrained-indy.pth"
 train_monkeys:
   - indy
   - loco

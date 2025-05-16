@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from efficient_rsnn_bmi.base.stork_model import StorkModel
+from neurobench.models import TorchModel as StorkModel
 from neurobench.benchmarks import Benchmark as StorkBenchmark
 
 from .loss import _choose_loss
@@ -26,7 +26,7 @@ def evaluate_model(model, cfg, test_dat):
     model = _configure_model_eval(model, test_dat, cfg)
 
     # Evaluate model
-    scores, pred, _ = model.evaluate_continuos_testdata(test_dat)
+    scores, pred, _ = model.evaluate_continuous_test_data(test_dat)
 
     target = test_dat[0][1].numpy()
 
