@@ -14,8 +14,9 @@ dependencies = [
     "hydra-core",
     "neurobench",
     "colorlog",
+    "seaborn",
     "stork @ git+https://github.com/fmi-basel/stork.git@40c68fe",
-    "randman @ git+https://github.com/fzenke/randman"
+    "randman @ git+https://github.com/fzenke/randman",
 ]
 requires-python = ">=3.10"
 authors = [
