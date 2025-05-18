@@ -58,7 +58,7 @@ def train_validate_model(
 
     if cfg.plotting.plot_snapshots:
         fix, ax = plot_activity_snapshot(
-            model, valid_data, save_path=snapshot_prefix + "snapshot_before.png"
+            model, valid_data, save_path=snapshot_prefix / "snapshot_before.png"
         )
 
     history = model.fit_validate(
@@ -72,7 +72,7 @@ def train_validate_model(
         fig, ax = plot_activity_snapshot(
             model,
             valid_data,
-            save_path=snapshot_prefix + "snapshot_after_e{}.png".format(nb_epochs),
+            save_path=snapshot_prefix / "snapshot_after_e{}.png".format(nb_epochs),
         )
 
     return model, history
@@ -120,7 +120,7 @@ def prune_retrain_model_iterate(
                                                                                                                 logger,
                                                                                                                 nb_epochs_retrain,
                                                                                                                 is_pruning_ver,
-                                                                                                                session_name)
+                                                                                                                pruning_plot_prefix / session_name)
 
 
         if r2_train_after_retraining-r2_train_before_pruned < -np.abs(tolerance*r2_train_before_pruned): # or r2_val_after_retraining-r2_val_before_pruned < -np.abs(tolerance*r2_val_before_pruned):
@@ -162,7 +162,8 @@ def prune_retrain_model_iterate(
         plt.ylabel("Sparsity")
         plt.title("Connection Sparsity vs. Pruning Percentage")
 
-        fig.savefig(pruning_plot_prefix+' Pruning.png', dpi=250)
+        (pruning_plot_prefix).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(pruning_plot_prefix /' Pruning.png', dpi=250)
 
     if prune_percentages:
         logger.info(f"Maximum pruning percentage that retains the performance of the unpruned model: {prune_percentages[-1]:.2f}")
@@ -210,7 +211,7 @@ def prune_retrain_model(
         valid_data,
         nb_epochs_retrain,
         verbose=is_pruning_ver, # cfg.training.verbose,
-        snapshot_prefix=session_name + ' Pruned ' + str(np.round(prune_percentage,2)) + "_",
+        snapshot_prefix=session_name / f'Pruned{str(np.round(prune_percentage,2))}_',
         mask=mask,
     )
     r2_train_after_retraining = history['r2'][-1]
@@ -232,7 +233,7 @@ def train_validate_model_pruning(
 
     if cfg.plotting.plot_snapshots:
         fix, ax = plot_activity_snapshot(
-            model, valid_data, save_path=snapshot_prefix + "snapshot_before.png"
+            model, valid_data, save_path=snapshot_prefix / "snapshot_before.png"
         )
     
     history = model.fit_validate_masked(
@@ -247,7 +248,7 @@ def train_validate_model_pruning(
         fig, ax = plot_activity_snapshot(
             model,
             valid_data,
-            save_path=snapshot_prefix + "snapshot_after_e{}.png".format(nb_epochs),
+            save_path=snapshot_prefix / "snapshot_after_e{}.png".format(nb_epochs),
         )
 
     return model, history
@@ -290,7 +291,7 @@ def prune_retrain_model(
         valid_data,
         nb_epochs_retrain,
         verbose=is_pruning_ver, # cfg.training.verbose,
-        snapshot_prefix=session_name + ' Pruned ' + str(np.round(prune_percentage,2)) + "_",
+        snapshot_prefix=session_name / f'Pruned{str(np.round(prune_percentage,2))}_',
         mask=mask,
     )
     r2_train_after_retraining = history['r2'][-1]

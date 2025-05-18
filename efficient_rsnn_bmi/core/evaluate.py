@@ -3,6 +3,8 @@ import torch
 
 from neurobench.models import TorchModel as StorkModel
 from neurobench.benchmarks import Benchmark as StorkBenchmark
+from neurobench.metrics.static import Footprint, ConnectionSparsity
+from neurobench.metrics.workload import R2 as RSquared, ActivationSparsity, SynapticOperations
 
 from .loss import _choose_loss
 
@@ -53,12 +55,23 @@ def evaluate_model(model, cfg, test_dat):
         shuffle=False,
     )
 
+    metric_registry = {
+        "footprint": Footprint,
+        "connection_sparsity": ConnectionSparsity,
+        "activation_sparsity": ActivationSparsity,
+        "synaptic_operations": SynapticOperations,
+        "r2": RSquared,
+    }
+
+    static_metrics = [metric_registry[m] for m in cfg.evaluation.static_metrics]
+    workload_metrics = [metric_registry[m] for m in cfg.evaluation.workload_metrics]
+
     benchmark = StorkBenchmark(
         test_model,
         test_set_loader,
         [],
         [],
-        [cfg.evaluation.static_metrics, cfg.evaluation.workload_metrics],
+        [static_metrics, workload_metrics],
     )
     bm_results = benchmark.run()
     bm.update(bm_results)

@@ -6,6 +6,7 @@ from hydra.utils import to_absolute_path
 import json
 import torch
 import numpy as np
+from datetime import datetime
 
 from efficient_rsnn_bmi.core.dataloader import get_dataloader
 from efficient_rsnn_bmi.core.model import get_model
@@ -21,6 +22,9 @@ from efficient_rsnn_bmi.utils.state import save_model_state, load_model_state
 from efficient_rsnn_bmi.utils.plotting import plot_training, plot_cumulative_mse
 
 logger = get_logger("train-baselineRSNN")
+
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+output_dir = Path("outputs") / "baseline" / timestamp
 
 @hydra.main(version_base=None, config_path="../config", config_name="defaults")
 def train_rsnn_tiny(cfg: DictConfig):
@@ -57,12 +61,11 @@ def train_rsnn_tiny(cfg: DictConfig):
 
             filename = list(cfg.datasets.pretrain_filenames[monkey_name].values())
             logger.info(f"Loading pretraining data for {filename} ...")
-
+            
             logger.info("Constructing model for " + monkey_name + " pretraining...")
             pretrain_dat, pretrain_val_dat, _ = dataloader.get_multiple_sessions_data(
                 filename
             )
-            # logger.info(f"Pretraining data loaded. {pretrain_dat.shape}, {pretrain_val_dat.shape}")
 
             model = get_model(cfg, nb_inputs=nb_inputs, dtype=dtype, data=pretrain_dat)
             logger.info(f"Model constructed. {model}")
@@ -72,6 +75,7 @@ def train_rsnn_tiny(cfg: DictConfig):
             logger.info(f"Model configured. {model}")
 
             logger.info("Pretraining on all {} sessions...".format(monkey_name))
+            pretraining_snapshot_prefix = output_dir / f"pretraining/baselineRSNN_pretrain_{monkey_name}_"
             model, history = train_validate_model(
                 model,
                 cfg,
@@ -79,7 +83,7 @@ def train_rsnn_tiny(cfg: DictConfig):
                 pretrain_val_dat,
                 cfg.training.nb_epochs_pretrain,
                 verbose=cfg.training.verbose,
-                snapshot_prefix="baselineRSNN_pretrain_" + monkey_name + "_",
+                snapshot_prefix=pretraining_snapshot_prefix,
             )
             results = {}
             for k, v in history.items():
@@ -91,10 +95,10 @@ def train_rsnn_tiny(cfg: DictConfig):
             logger.info("Pretraining complete.")
 
             converted_results = convert_np_float_to_float(results)
-            with open("baselineRSNN-results-pretraining-" + monkey_name + ".json", "w") as f:
+            with open(f"{output_dir}/baselineRSNN-results-pretraining-{monkey_name}.json", "w") as f:
                 json.dump(converted_results, f, indent=4)
             
-            save_model_state(model, "baselineRSNN-pretrained-" + monkey_name + ".pth")
+            save_model_state(model, f"{output_dir}/baselineRSNN-results-pretraining-{monkey_name}.pth")
 
             pretrained_model = model.state_dict()
 
@@ -128,6 +132,7 @@ def train_rsnn_tiny(cfg: DictConfig):
                 logger.info("Pretrained model state loaded.")
 
             logger.info("Training on " + session_name + "...")
+            training_snapshot_prefix = output_dir / f"training/baselineRSNN_{session_name}_"
             model, history = train_validate_model(
                 model,
                 cfg,
@@ -135,7 +140,7 @@ def train_rsnn_tiny(cfg: DictConfig):
                 val_dat,
                 cfg.training.nb_epochs_train,
                 verbose=cfg.training.verbose,
-                snapshot_prefix="baselineRSNN_" + session_name + "_",
+                snapshot_prefix=training_snapshot_prefix,
             )
 
             results = {}
@@ -147,7 +152,7 @@ def train_rsnn_tiny(cfg: DictConfig):
 
             logger.info("Training complete.")
 
-        save_model_state(model, "baselineRSNN-" + session_name + ".pth")
+        save_model_state(model,f"{output_dir}/baselineRSNN-results-training-{session_name}.pth")
 
         if cfg.training.is_prune:
             model = prune_retrain_model_iterate(
@@ -166,17 +171,17 @@ def train_rsnn_tiny(cfg: DictConfig):
                 is_plot_pruning=cfg.training.is_plot_pruning,
                 is_pruning_ver=cfg.training.is_pruning_ver,
                 session_name=session_name,
-                pruning_plot_prefix=session_name
+                pruning_plot_prefix=output_dir / f"pruning/baselineRSNN_pruning_{session_name}_",
             )
-            save_model_state(model, "tinyRSNN-" + session_name + " pruned.pth")
+            save_model_state(model, f"{output_dir}/baselineRSNN-results-pruning-{session_name}.pth")
         
         if cfg.model.is_half:
             model = model.half()
             # Save pruned model state
             if cfg.training.is_prune:
-                save_model_state(model, "tinyRSNN-" + session_name + " pruned half.pth")
+                save_model_state(model, f"{output_dir}/baselineRSNN-results-half-pruning-{session_name}.pth")
             else:
-                save_model_state(model, "tinyRSNN-" + session_name + " half.pth")
+                save_model_state(model, f"{output_dir}/baselineRSNN-results-half-{session_name}.pth")
                 
             logger.info("Model converted to half precision.")
 
@@ -186,7 +191,7 @@ def train_rsnn_tiny(cfg: DictConfig):
         if cfg.seed:
             path = Path(to_absolute_path('models')) / session_name
             path.mkdir(parents=True, exist_ok=True)
-            filepath = path / ("tinyRSNN-" + str(cfg.seed) + ".pth")
+            filepath = path / ("baselineRSNN-" + str(cfg.seed) + ".pth")
             save_model_state(model, filepath)
             
         logger.info("Saved model state.")
@@ -197,7 +202,7 @@ def train_rsnn_tiny(cfg: DictConfig):
 
         if cfg.plotting.plot_cumulative_mse:
             fig, ax = plot_cumulative_mse(
-                model, val_dat, save_path="tinyRSNN_cumulative_se_" + session_name + ".png"
+                model, val_dat, save_path=output_dir / "plotting/baselineRSNN_cumulative_se_" + session_name + ".png"
             )
 
         model, scores, pred, bm_results = evaluate_model(model, cfg, test_dat)
@@ -215,7 +220,7 @@ def train_rsnn_tiny(cfg: DictConfig):
 
         # Save to JSON file with indentation
         converted_results = convert_np_float_to_float(results)
-        with open("tinyRSNN-results-" + session_name + ".json", "w") as f:
+        with open(f"{output_dir}/baselineRSNN-results-{session_name}.json", "w") as f:
             json.dump(converted_results, f, indent=4)
 
         if cfg.plotting.plot_training:
@@ -223,7 +228,7 @@ def train_rsnn_tiny(cfg: DictConfig):
                 results,
                 cfg.training.nb_epochs_train,
                 names=["loss", "r2"],
-                save_path="tinyRSNN_training_" + session_name + ".png",
+                save_path=output_dir / f"baselineRSNN_training_{session_name}.png"
             )
 
             

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 
 import torch
 import numpy as np
@@ -81,6 +82,7 @@ def plot_training(
     sns.despine()
 
     if save_path is not None:
+        (save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=250)
     return fig, ax
 
@@ -139,6 +141,7 @@ def plot_cumulative_mse(model, dataset, n_samples=5, save_path=None):
 
     sns.despine()
     if save_path is not None:
+        (save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=250)
     return fig, ax
 
@@ -269,6 +272,7 @@ def plot_activity_snapshot(model, data, save_path=None):
     )
 
     if save_path is not None:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=250)
 
     return fig, ax

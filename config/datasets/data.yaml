@@ -17,7 +17,6 @@ nb_inputs:
   indy: 96
 
 stride: 4e-3
-# stride: 0.2  
 extend_data: True
 sample_duration: 2.0
 
