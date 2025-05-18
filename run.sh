@@ -47,7 +47,12 @@ else
     exit 1
 fi
 
-run_cmd="python3 -m $entrypoint ${extra_args[@]}"
+mkdir -p outputs/log
+
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+logfile="outputs/log/main_${experiment_name}_${timestamp}.log"
+
+run_cmd="python3 -m $entrypoint ${extra_args[@]} | tee \"$logfile\""
 echo "Running command: $run_cmd"
 
 eval "${run_cmd}"
