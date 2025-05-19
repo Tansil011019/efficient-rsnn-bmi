@@ -1,17 +1,17 @@
 defaults:
   - defaults
-  - model/model@model
-  - training/training@training
+  - model/model@baselineRSNN
+  - training/training@baselineRSNNtraining
   - _self_
 
-device: "cuda"
+device: "cpu"
 dtype: 'float32'
 
 
 output_dir : ./output
 model_dir: ./models
 
-modelname: 'baseline-rsnn'    # 'tinyRSNN' or 'bigRSNN' or 'all'
+modelname: 'baselineRSNN'    # 'tinyRSNN' or 'bigRSNN' or 'all'
 
 use_snnTorch_model: False   # Set to True to use the equivalent snnTorch model instead of `stork` model for evaluation
 

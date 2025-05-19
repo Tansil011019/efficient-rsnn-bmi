@@ -77,3 +77,39 @@ def evaluate_model(model, cfg, test_dat):
     bm.update(bm_results)
 
     return model, scores, pred, bm
+
+def benchmark_model(model, cfg, test_dat):
+
+    # Re-configure model for eval
+    model = _configure_model_eval(model, test_dat, cfg)
+    
+    test_model = StorkModel(model)
+
+    # Benchmark expects the following dataloader
+    test_set_loader = torch.utils.data.DataLoader(
+        test_dat,
+        batch_size=1,
+        shuffle=False,
+    )
+
+    metric_registry = {
+        "footprint": Footprint,
+        "connection_sparsity": ConnectionSparsity,
+        "activation_sparsity": ActivationSparsity,
+        "synaptic_operations": SynapticOperations,
+        "r2": RSquared,
+    }
+
+    static_metrics = [metric_registry[m] for m in cfg.evaluation.static_metrics]
+    workload_metrics = [metric_registry[m] for m in cfg.evaluation.workload_metrics]
+
+    benchmark = StorkBenchmark(
+        test_model,
+        test_set_loader,
+        [],
+        [],
+        [static_metrics, workload_metrics],
+    )
+    bm_results = benchmark.run()
+    
+    return bm_results
