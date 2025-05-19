@@ -152,84 +152,89 @@ def train_rsnn_tiny(cfg: DictConfig):
 
             logger.info("Training complete.")
 
-        save_model_state(model,f"{output_dir}/baselineRSNN-results-training-{session_name}.pth")
+            save_model_state(model,f"{output_dir}/baselineRSNN-results-training-{session_name}.pth")
 
-        if cfg.training.is_prune:
-            model = prune_retrain_model_iterate(
-                model,
-                cfg,
-                train_dat,  
-                val_dat,
-                logger,
-                history['r2'][-1],
-                history['val_r2'][-1],
-                nb_epochs_retrain=cfg.training.nb_epochs_retrain,
-                prune_percentage_start=cfg.training.prune_percentage_start,
-                tolerance=cfg.training.tolerance, 
-                prune_precision=cfg.training.prune_precision,
-                max_prune_percentage=cfg.training.max_prune_percentage,
-                is_plot_pruning=cfg.training.is_plot_pruning,
-                is_pruning_ver=cfg.training.is_pruning_ver,
-                session_name=session_name,
-                pruning_plot_prefix=output_dir / f"pruning/baselineRSNN_pruning_{session_name}_",
-            )
-            save_model_state(model, f"{output_dir}/baselineRSNN-results-pruning-{session_name}.pth")
-        
-        if cfg.model.is_half:
-            model = model.half()
-            # Save pruned model state
             if cfg.training.is_prune:
-                save_model_state(model, f"{output_dir}/baselineRSNN-results-half-pruning-{session_name}.pth")
-            else:
-                save_model_state(model, f"{output_dir}/baselineRSNN-results-half-{session_name}.pth")
-                
-            logger.info("Model converted to half precision.")
-
-            test_dat.dtype = torch.float16
-            logger.info("Test data converted to half precision.")
-        
-        if cfg.seed:
-            path = Path(to_absolute_path('models')) / session_name
-            path.mkdir(parents=True, exist_ok=True)
-            filepath = path / ("baselineRSNN-" + str(cfg.seed) + ".pth")
-            save_model_state(model, filepath)
+                model = prune_retrain_model_iterate(
+                    model,
+                    cfg,
+                    train_dat,  
+                    val_dat,
+                    logger,
+                    history['r2'][-1],
+                    history['val_r2'][-1],
+                    nb_epochs_retrain=cfg.training.nb_epochs_retrain,
+                    prune_percentage_start=cfg.training.prune_percentage_start,
+                    tolerance=cfg.training.tolerance, 
+                    prune_precision=cfg.training.prune_precision,
+                    max_prune_percentage=cfg.training.max_prune_percentage,
+                    is_plot_pruning=cfg.training.is_plot_pruning,
+                    is_pruning_ver=cfg.training.is_pruning_ver,
+                    session_name=session_name,
+                    pruning_plot_prefix=output_dir / f"pruning/baselineRSNN_pruning_{session_name}_",
+                )
+                save_model_state(model, f"{output_dir}/baselineRSNN-results-pruning-{session_name}.pth")
             
-        logger.info("Saved model state.")
+            if cfg.model.is_half:
+                model = model.half()
+                # Save pruned model state
+                if cfg.training.is_prune:
+                    save_model_state(model, f"{output_dir}/baselineRSNN-results-half-pruning-{session_name}.pth")
+                else:
+                    save_model_state(model, f"{output_dir}/baselineRSNN-results-half-{session_name}.pth")
+                    
+                logger.info("Model converted to half precision.")
 
-        logger.info("=" * 50)
-        logger.info("Evaluating model...")
-        logger.info("=" * 50)
+                test_dat.dtype = torch.float16
+                logger.info("Test data converted to half precision.")
+            
+            if cfg.seed:
+                path = Path(to_absolute_path('models')) / session_name
+                path.mkdir(parents=True, exist_ok=True)
+                filepath = path / ("baselineRSNN-" + str(cfg.seed) + ".pth")
+                save_model_state(model, filepath)
+                
+            logger.info("Saved model state.")
 
-        if cfg.plotting.plot_cumulative_mse:
-            fig, ax = plot_cumulative_mse(
-                model, val_dat, save_path=output_dir / "plotting/baselineRSNN_cumulative_se_" + session_name + ".png"
-            )
+            logger.info("=" * 50)
+            logger.info("Evaluating model...")
+            logger.info("=" * 50)
 
-        model, scores, pred, bm_results = evaluate_model(model, cfg, test_dat)
+            if cfg.plotting.plot_cumulative_mse:
+                fig, ax = plot_cumulative_mse(
+                    model, val_dat, save_path=output_dir / "plotting/baselineRSNN_cumulative_se_" + session_name + ".png"
+                )
 
-        logger.info("Benchmark results:")
-        for k, v in bm_results.items():
-            # log key and value rounded to 4 decimal places
-            if isinstance(v, float):
-                logger.info(f"{k}: {v:.4f}")
-            else:
-                logger.info(f"{k}: {v}")
+            model, scores, pred, bm_results = evaluate_model(model, cfg, test_dat)
 
-        for k, v in model.get_metrics_dict(scores).items():
-            results["test_" + k] = v
+            logger.info("Evaluation complete.")
 
-        # Save to JSON file with indentation
-        converted_results = convert_np_float_to_float(results)
-        with open(f"{output_dir}/baselineRSNN-results-{session_name}.json", "w") as f:
-            json.dump(converted_results, f, indent=4)
+            logger.info("=" * 50)
+            logger.info("Benchmark results:")
+            logger.info("=" * 50)
+            logger.info(f"bm_results: {bm_results}")
+            for k, v in bm_results.items():
+                # log key and value rounded to 4 decimal places
+                if isinstance(v, float):
+                    logger.info(f"{k}: {v:.4f}")
+                else:
+                    logger.info(f"{k}: {v}")
 
-        if cfg.plotting.plot_training:
-            fig, ax = plot_training(
-                results,
-                cfg.training.nb_epochs_train,
-                names=["loss", "r2"],
-                save_path=output_dir / f"baselineRSNN_training_{session_name}.png"
-            )
+            for k, v in model.get_metrics_dict(scores).items():
+                results["test_" + k] = v
+
+            # Save to JSON file with indentation
+            converted_results = convert_np_float_to_float(results)
+            with open(f"{output_dir}/baselineRSNN-results-{session_name}.json", "w") as f:
+                json.dump(converted_results, f, indent=4)
+
+            if cfg.plotting.plot_training:
+                fig, ax = plot_training(
+                    results,
+                    cfg.training.nb_epochs_train,
+                    names=["loss", "r2"],
+                    save_path=output_dir / f"baselineRSNN_training_{session_name}.png"
+                )
 
             
             
