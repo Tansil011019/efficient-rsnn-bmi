@@ -173,3 +173,5 @@ cython_debug/
 
 outputs/
 data/datasets/
+*.pth
+*.png
