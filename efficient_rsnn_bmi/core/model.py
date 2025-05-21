@@ -37,8 +37,6 @@ def get_model (cfg, nb_inputs, dtype, data=None):
 
     regularizers = get_regularizers(cfg)
 
-    logger.info(f"data: {data}")
-
     if data is not None:
         mean1, mean2 = compute_input_firing_rates(data, cfg)
     else:
