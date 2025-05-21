@@ -22,7 +22,7 @@ def get_model (cfg, nb_inputs, dtype, data=None):
     """
     Get the model based on the configuration.
     """
-    nb_time_steps = int(cfg.datasets.sample_duration / cfg.datasets.stride)
+    nb_time_steps = int(cfg.datasets.sample_duration / cfg.datasets.dt)
     nb_outputs = cfg.datasets.nb_outputs
     
     model = BaselineRecurrentSpikingModel(
@@ -37,15 +37,11 @@ def get_model (cfg, nb_inputs, dtype, data=None):
 
     regularizers = get_regularizers(cfg)
 
-    logger.info(f"data: {data}")
-
     if data is not None:
         mean1, mean2 = compute_input_firing_rates(data, cfg)
     else:
         mean1 = None
 
-    print('This is mean')
-    print(mean1, mean2)
     hidden_init, readout_init = get_initializers(cfg, mean1, dtype)
 
     input_group = model.add_group(
