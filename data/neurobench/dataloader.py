@@ -3,6 +3,7 @@
 import numpy as np
 import torch
 import stork
+from .ras_dataset import RasDataset
 from neurobench.datasets.primate_reaching import PrimateReaching
 from neurobench.datasets.utils import download_url
 from urllib.error import URLError
@@ -336,7 +337,7 @@ class DatasetLoader:
             nb_steps=data.shape[-2], nb_units=data.shape[-1], time_scale=1.0
         )
 
-        monkey_ds = stork.datasets.RasDataset(
+        monkey_ds = RasDataset(
             (ras_data, labels), dtype=self.dtype, 
             **monkey_ds_kwargs, **data_augmentation_kwargs
         )
