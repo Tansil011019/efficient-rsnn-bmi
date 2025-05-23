@@ -4,7 +4,7 @@ defaults:
   - training/training@baselineRSNNtraining
   - _self_
 
-device: "cpu"
+device: "cuda"
 dtype: 'float32'
 
 

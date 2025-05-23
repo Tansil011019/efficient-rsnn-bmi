@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from neurobench.models import TorchModel as StorkModel
+from efficient_rsnn_bmi.base.stork_model import StorkModel
 from neurobench.benchmarks import Benchmark as StorkBenchmark
 from neurobench.metrics.static import Footprint, ConnectionSparsity
 from neurobench.metrics.workload import R2 as RSquared, ActivationSparsity, SynapticOperations
@@ -92,6 +92,20 @@ def benchmark_model(model, cfg, test_dat):
         shuffle=False,
     )
 
+    # Evaluate model
+    scores, pred, _ = model.evaluate_continuous_test_data(test_dat)
+
+    target = test_dat[0][1].numpy()
+
+    SST = np.sum((target - np.mean(target, 0)) ** 2, 0)
+    SSR = np.sum((target - pred) ** 2, 0)
+    R2 = 1 - SSR / SST
+
+    bm = {}
+    bm["R2 X (JR)"] = R2[0].astype(float)
+    bm["R2 Y (JR)"] = R2[1].astype(float)
+    bm["R2 mean (JR)"] = np.mean(R2).astype(float)
+
     metric_registry = {
         "footprint": Footprint,
         "connection_sparsity": ConnectionSparsity,
@@ -112,4 +126,4 @@ def benchmark_model(model, cfg, test_dat):
     )
     bm_results = benchmark.run()
     
-    return bm_results
+    return bm, bm_results
