@@ -15,6 +15,11 @@ dependencies = [
     "neurobench",
     "colorlog",
     "seaborn",
+    "spikingjelly",
+    "tqdm",
+    "dcls",
+    "pillow",
+    "wandb",
     "stork @ git+https://github.com/fmi-basel/stork.git@40c68fe",
     "randman @ git+https://github.com/fzenke/randman",
 ]
