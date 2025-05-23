@@ -29,7 +29,6 @@ def configure_model(model, cfg, train_data, dtype):
     
     generator = StandardGenerator(nb_workers=cfg.nb_workers, worker_init_fn=worker_init_fn)
 
-    print(f"This is the model input {model.groups[0]}")
 
     # Configure model
     model.configure(

@@ -50,13 +50,14 @@ class BenchmarkResultsHandler:
         self.r2 = []
 
     def append(self, results):
-        self.footprint.append(results["footprint"])
-        self.connection_sparsity.append(results["connection_sparsity"])
-        self.activation_sparsity.append(results["activation_sparsity"])
-        self.dense.append(results["synaptic_operations"]["Dense"])
-        self.macs.append(results["synaptic_operations"]["Effective_MACs"])
-        self.acs.append(results["synaptic_operations"]["Effective_ACs"])
-        self.r2.append(results["r2"])
+        print("this is the result", results)
+        self.footprint.append(results["Footprint"])
+        self.connection_sparsity.append(results["ConnectionSparsity"])
+        self.activation_sparsity.append(results["ActivationSparsity"])
+        self.dense.append(results["SynapticOperations"]["Dense"])
+        self.macs.append(results["SynapticOperations"]["Effective_MACs"])
+        self.acs.append(results["SynapticOperations"]["Effective_ACs"])
+        self.r2.append(results["R2"])
 
     def get_summary(self):
         return {
@@ -127,7 +128,8 @@ def load_and_benchmark_stork_model(
         model = model.half()
         test_dat.dtype = torch.float16
 
-    bm_results = benchmark_model(model, this_cfg, test_dat)
+    bm, bm_results = benchmark_model(model, this_cfg, test_dat)
+    print(bm, bm_results)
 
     return model, bm_results
 
@@ -155,7 +157,7 @@ def benchmark_all_models_stork(
         logger.info("Benchmark results:")
         logger.info("R2: {}".format(bm_results["R2"]))
         logger.info("Footprint: {}".format(bm_results["Footprint"]))
-        logger.info("Connection Sparsity: {}".format(bm_results["'ConnectionSparsity"]))
+        logger.info("Connection Sparsity: {}".format(bm_results["ConnectionSparsity"]))
         logger.info("Activation Sparsity: {}".format(bm_results["ActivationSparsity"]))
         logger.info("Dense: {}".format(bm_results["SynapticOperations"]["Dense"]))
         logger.info(
