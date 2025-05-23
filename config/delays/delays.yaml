@@ -1,0 +1,17 @@
+# TODO: don't forget to change this
+# Initialization 
+# Weight Init
+sparsity_p: 0
+non_linearity: 'relu'
+
+# Delay Position Init
+a: 1 # change this later
+b: 1
+
+# SIG init
+sig_init: 1
+
+# Connection
+kernel_count: 1
+version: "gauss"
+groups: 1
