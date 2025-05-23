@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from neurobench.models import TorchModel as StorkModel
+from efficient_rsnn_bmi.base.stork_model import StorkModel
 from neurobench.benchmarks import Benchmark as StorkBenchmark
 from neurobench.metrics.static import Footprint, ConnectionSparsity
 from neurobench.metrics.workload import R2 as RSquared, ActivationSparsity, SynapticOperations
