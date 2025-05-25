@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 import torch.nn as nn
+from collections import deque
 
 class CustomDelayConnection(BaseConnection):
     def __init__(
@@ -15,6 +16,7 @@ class CustomDelayConnection(BaseConnection):
         left_padding,
         right_padding,
         version="gauss",
+        stride = 1,
         groups = 1,
         target=None,
         bias=False,
@@ -42,16 +44,25 @@ class CustomDelayConnection(BaseConnection):
         self.version = version
         self.left_padding = left_padding
         self.right_padding = right_padding
+        self.stride = stride
+        self.delay_buffer = deque()
+        self.conv_out_size = None
 
         self.op = Dcls1d(
             in_channels=src.shape[0], 
             out_channels=dst.shape[0], 
             kernel_count=kernel_count,
             groups=groups,
+            stride=stride,
             dilated_kernel_size=dilated_kernel_size,
             bias=bias, 
             version=version
         )
+
+        self.conv_out_size = ((1 - self.dilated_kernel_size + (self.left_padding + self.right_padding)) / self.stride) + 1
+        if not self.conv_out_size.is_integer() or self.conv_out_size <= 0:
+            raise ValueError(f"Convolution Output Size must be positive integer, got {self.conv_out_size}")
+        
         for param in self.op.parameters():
             param.requires_grad = requires_grad
 
@@ -77,17 +88,28 @@ class CustomDelayConnection(BaseConnection):
         return reg_loss
 
     def forward(self):
-        preact = self.src.out
+        preact = self.src.out # (batch size, channels)
         if not self.propagate_gradients:
             preact = preact.detach()
+        
+        preact = preact.unsqueeze(2) # (batch size = 250, channels = 96, time step = 1)
+        preact = F.pad(preact, (self.left_padding, self.right_padding), 'constant', 0)
+        conv_out = self.op(preact) # (batch size, channels = 64, time step = 13)
 
-        # TODO: check the shape on this one
-        # (time, batch, features) -> (batch, features, time)
-        preact = preact.permute(1, 2, 0)
-        preact = F.pad(preact, (self.left_padding, self.right_padding), 'constant', '0')
-        out = self.op(preact)
-        # (batch, features, time) -> (time, batch, features) 
-        out = out.permute(2, 0, 1)
+        # Getting the first delay kernel
+        scheduled = self.delay_buffer.popleft() if self.delay_buffer else None
+        
+        # Current Output
+        out = conv_out[:, :, 0] + scheduled if scheduled is not None else conv_out[:, :, 0]
+        conv_ts = conv_out.shape[-1]
+        
+        # Adding to the delay kernel
+        for i in range(1, conv_ts):
+            if len(self.delay_buffer) >= i:
+                self.delay_buffer[i - 1] += conv_out[:, :, i]
+            else:
+                self.delay_buffer.append(conv_out[:, :, i])
+
         self.dst.add_to_state(self.target, out)
 
     def propagate(self):
@@ -96,3 +118,6 @@ class CustomDelayConnection(BaseConnection):
     def apply_constraints(self):
         for const in self.constraints:
             const.apply(self.op.weight)
+
+    def reset_states(self):
+        self.delay_buffer.clear()

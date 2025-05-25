@@ -260,3 +260,6 @@ class CustomLIFGroup(CellGroup):
         self.mem = self.states["mem"] = new_mem
         if not self.is_delta_syn:
             self.syn = self.states["syn"] = new_syn
+
+    def get_flattened_out_sequence(self):
+        return self.get_state_sequence("out")
