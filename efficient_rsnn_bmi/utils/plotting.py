@@ -171,7 +171,7 @@ def plot_activity_CST(
     #print("plotting CST snapshot")
 
     # Run model once and get activities
-    print(f"Evaluating model... {data[0][0].shape}")
+    # print(f"Evaluating model... {data[0][0].shape}") # (500, 96)
     scores = model.evaluate(data)
     print("This is the score", scores)
 

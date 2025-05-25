@@ -15,3 +15,6 @@ sig_init: 1
 kernel_count: 1
 version: "gauss"
 groups: 1
+
+max_delays: 0.1 # in seconds (take a look for 25 nb of time steps)
+stride: 1 # default for the dcls1d
