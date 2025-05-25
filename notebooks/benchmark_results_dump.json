@@ -1,0 +1,9 @@
+{
+  "R2": 0.7491962909698486,
+  "ActivationSparsity": 0.0,
+  "SynapticOperations": {
+    "Effective_MACs": 0.0,
+    "Effective_ACs": 304.8286898457288,
+    "Dense": 10368.0
+  }
+}
