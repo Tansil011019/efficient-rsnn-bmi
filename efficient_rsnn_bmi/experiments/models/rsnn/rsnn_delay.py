@@ -297,5 +297,7 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         self.fit_runs.append(self.hist)
         dict1 = self.get_metrics_history_dict(np.array(self.hist_train), prefix="")
         dict2 = self.get_metrics_history_dict(np.array(self.hist_valid), prefix="val_")
-        history = {**dict1, **dict2, **self.pos_logs}
+        history = {
+            **dict1, **dict2, "pos_logs": self.pos_logs
+        }
         return history
