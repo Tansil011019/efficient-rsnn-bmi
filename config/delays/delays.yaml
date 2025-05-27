@@ -5,16 +5,21 @@ sparsity_p: 0
 non_linearity: 'relu'
 
 # Delay Position Init
-a: 1 # change this later
-b: 1
+a: 1 # change this later # ! remove this later, if not used
+b: 1 # ! remove this later, if not used
 
-# SIG init
-sig_init: 1
+# SIG
+sig_init: 1 # ! remove this later, if not used
+sig_threshold: 0.23
+reduce_threshold: 0.25 # 1/4 epochs
 
 # Connection
-kernel_count: 1
+kernel_count: 1 
 version: "gauss"
 groups: 1
 
 max_delays: 0.1 # in seconds (take a look for 25 nb of time steps)
 stride: 1 # default for the dcls1d
+
+# Training
+lr: 0.1

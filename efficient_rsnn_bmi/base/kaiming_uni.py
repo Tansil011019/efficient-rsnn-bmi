@@ -24,7 +24,6 @@ class KaimingUniformInitializer(Initializer):
         self.verbose = verbose
 
     def _get_weights(self, connection):
-
         weights = init.kaiming_uniform_(connection.op.weight, nonlinearity=self.nonlinearity)
         return weights
     

@@ -15,7 +15,10 @@ class CustomDelayConnection(BaseConnection):
         dilated_kernel_size,
         left_padding,
         right_padding,
+        sig_init,
+        sig_threshold=0.5,
         version="gauss",
+        sig_stop_ep=0.25,
         stride = 1,
         groups = 1,
         target=None,
@@ -47,6 +50,9 @@ class CustomDelayConnection(BaseConnection):
         self.stride = stride
         self.delay_buffer = deque()
         self.conv_out_size = None
+        self.sig_init = sig_init
+        self.sig_threshold = sig_threshold
+        self.sig_stop_ep = sig_stop_ep
 
         self.op = Dcls1d(
             in_channels=src.shape[0], 
@@ -121,3 +127,6 @@ class CustomDelayConnection(BaseConnection):
 
     def reset_states(self):
         self.delay_buffer.clear()
+    
+    def decrease_sig(self, alpha=0.9):
+        self.op.SIG *= alpha

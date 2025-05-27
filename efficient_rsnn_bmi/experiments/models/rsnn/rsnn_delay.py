@@ -1,7 +1,9 @@
 import torch   
 import numpy as np
 from tqdm import tqdm
+import time
 
+from DCLS.construct.modules import Dcls1d
 import stork
 from stork.models import (
     RecurrentSpikingModel,
@@ -32,6 +34,11 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         self.output_group = output
         self.time_step = time_step
         self.wandb = wandb
+        self.dcls_connection = [
+            conn
+            for conn in self.connections
+            if isinstance(conn.op, Dcls1d)
+        ]
 
         if loss_stack is not None:
             self.loss_stack = loss_stack
@@ -54,10 +61,12 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         )
 
         for o in self.groups + self.connections:
-            if isinstance(o, CustomDelayConnection) and self.conv_out_size is None:
-                self.conv_out_size = o.conv_out_size
-                if not self.conv_out_size.is_integer() or self.conv_out_size <= 0:
-                    raise ValueError(f"Convolution Output Size must be positive integer, got {self.conv_out_size}")
+            if isinstance(o, CustomDelayConnection):
+                if self.conv_out_size is None:
+                    self.conv_out_size = o.conv_out_size
+                    if not self.conv_out_size.is_integer() or self.conv_out_size <= 0:
+                        raise ValueError(f"Convolution Output Size must be positive integer, got {self.conv_out_size}")
+
             o.configure(
                 self.batch_size,
                 self.nb_time_steps,
@@ -127,3 +136,165 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
             )
 
         return np.mean(np.array(metrics), axis=0)
+
+    def decrease_sig(self, cur_ep, final_ep):
+        '''
+        Decrease the sig value along with the increase of the epoch
+        '''
+        alpha = 1.0
+
+        if not self.dcls_connection:
+            raise ValueError("No Dcls1d connection found in the model.")
+
+        last_dcls_con = self.dcls_connection[-1]
+
+        sig_stop_ep = last_dcls_con.sig_stop_ep
+        sig_threshold = last_dcls_con.sig_threshold
+        sig_init = last_dcls_con.sig_init
+        sig = last_dcls_con.op.SIG[0, 0, 0, 0].detach().cpu().item()
+
+        dec_end_ep = final_ep * sig_stop_ep
+
+        if dec_end_ep <= 0:
+            raise ValueError("dec_end_ep must be greater than 0.")
+
+        if cur_ep < int(dec_end_ep) and sig > sig_threshold:
+            alpha = (sig_threshold / sig_init) ** (1 / dec_end_ep)  
+        
+        if alpha != 1.0:
+            for conn in self.dcls_connection:
+                if isinstance(conn.op, Dcls1d): conn.decrease_sig(alpha)
+    
+    def configure_optimizer(self, optimizer_class, optimizer_kwargs):
+        '''
+        Configures the optimizer with support for different learning rates for 'P' parameters.
+        '''      
+        if optimizer_kwargs is not None:
+            kwargs = optimizer_kwargs.copy()
+
+            base_lr = kwargs.pop("lr", 1e-3) # 1e-3 is the one implemented in the delay paper
+            lr_P = kwargs.pop("lr_P", base_lr)
+
+            delay_pos_param = []
+            other_param = []
+
+            for name, param in self.named_parameters():
+                if param.requires_grad:
+                    if 'P' in name:
+                        delay_pos_param.append(param)
+                    else:
+                        other_param.append(param)
+            
+            param_groups = [
+                {
+                    "params": other_param, "lr": base_lr,
+                },
+                {
+                    "params": delay_pos_param, "lr": lr_P,
+                }
+            ]
+            self.optimizer_instance = optimizer_class(param_groups, **kwargs)
+        else:
+            self.optimizer_instance = optimizer_class(self.parameters())
+
+    def train_epoch(self, dataset, shuffle=True):
+        self.train(True)
+        self.prepare_data(dataset)
+        metrics = []
+        for local_X, local_y in self.data_generator(dataset, shuffle=shuffle):
+            output = self.forward_pass(local_X, cur_batch_size=len(local_X))
+            total_loss = self.get_total_loss(output, local_y)
+
+            # store loss and other metrics
+            metrics.append(
+                [self.out_loss.item(), self.reg_loss.item()] + self.loss_stack.metrics
+            )
+
+            # Use autograd to compute the backward pass.
+            self.optimizer_instance.zero_grad()
+            total_loss.backward()
+
+            self.optimizer_instance.step()
+            self.apply_constraints()
+            
+        if self.scheduler_instance is not None:
+            self.scheduler_instance.step()
+
+        return np.mean(np.array(metrics), axis=0)
+
+    def fit_validate(
+        self, dataset, valid_dataset, nb_epochs=10, verbose=True, wandb=None
+    ):
+        print("=" * 50)
+        print("FIT VALIDATE")
+        print("=" * 50)
+        self.hist_train = []
+        self.hist_valid = []
+        self.pos_logs = []
+        self.wall_clock_time = []
+        
+        pos_val = [
+           np.copy(conn.P.detach().cpu().numpy()) 
+           for conn in self.dcls_connection
+        ]
+        pre_pos_epoch = pos_val.copy()
+        pre_pos_5epochs = pos_val.copy()
+
+        for ep in range(nb_epochs):
+            t_start = time.time()
+            self.train()
+            ret_train = self.train_epoch(dataset)
+            self.decrease_sig(ep, nb_epochs)
+            # Just monitoring the changes from the delay position (same as the references)
+            pos_logs = {}
+            for i, conn in enumerate(self.dcls_connection):
+                curr_pos = conn.P.detach().cpu().numpy()
+                dpos_epoch = np.abs(curr_pos - pre_pos_epoch[i]).mean()
+                pos_logs[f'dpos{i}_epoch'] = dpos_epoch
+                pre_pos_epoch[i] = curr_pos.copy()
+
+                if ep % 5 == 0 and ep > 0:
+                    dpos_5epochs = np.abs(curr_pos - pre_pos_5epochs[i]).mean()
+                    pos_logs[f'dpos{i}_5epochs'] = dpos_5epochs
+                    pre_pos_5epochs[i] = curr_pos.copy()
+
+            self.train(False)
+            ret_valid = self.evaluate(valid_dataset)
+            self.hist_train.append(ret_train)
+            self.hist_valid.append(ret_valid)
+            self.pos_logs.append(pos_logs)
+
+            if self.wandb is not None:
+                self.wandb.log(
+                    {
+                        key: value
+                        for (key, value) in zip(
+                            self.get_metric_names()
+                            + self.get_metric_names(prefix="val_"),
+                            ret_train.tolist() + ret_valid.tolist(),
+                        )
+                    }
+                )
+            
+            if verbose:
+                t_iter = time.time() - t_start
+                self.wall_clock_time.append(t_iter)
+                print(
+                    "%02i %s --%s t_iter=%.2f"
+                    % (
+                        ep,
+                        self.get_metrics_string(ret_train),
+                        self.get_metrics_string(ret_valid, prefix="val_"),
+                        t_iter,
+                    )
+                )
+
+        self.hist = np.concatenate(
+            (np.array(self.hist_train), np.array(self.hist_valid))
+        )
+        self.fit_runs.append(self.hist)
+        dict1 = self.get_metrics_history_dict(np.array(self.hist_train), prefix="")
+        dict2 = self.get_metrics_history_dict(np.array(self.hist_valid), prefix="val_")
+        dict3 = self.get_metrics_history_dict(np.array(self.pos_logs), prefix="pos_")
+        history = {**dict1, **dict2, **dict3}
+        return history
