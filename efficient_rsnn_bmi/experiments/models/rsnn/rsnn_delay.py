@@ -203,6 +203,8 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         metrics = []
         for local_X, local_y in self.data_generator(dataset, shuffle=shuffle):
             output = self.forward_pass(local_X, cur_batch_size=len(local_X))
+            if output.shape[1] > local_y.shape[1]:
+                output = output[:, :local_y.shape[1], :]
             total_loss = self.get_total_loss(output, local_y)
 
             # store loss and other metrics
@@ -234,7 +236,7 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         self.wall_clock_time = []
         
         pos_val = [
-           np.copy(conn.P.detach().cpu().numpy()) 
+           np.copy(conn.op.P.detach().cpu().numpy()) 
            for conn in self.dcls_connection
         ]
         pre_pos_epoch = pos_val.copy()
@@ -243,12 +245,12 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         for ep in range(nb_epochs):
             t_start = time.time()
             self.train()
-            ret_train = self.train_epoch(dataset)
+            ret_train = self.train_epoch(dataset) # 1 epoch = 2 min
             self.decrease_sig(ep, nb_epochs)
             # Just monitoring the changes from the delay position (same as the references)
             pos_logs = {}
             for i, conn in enumerate(self.dcls_connection):
-                curr_pos = conn.P.detach().cpu().numpy()
+                curr_pos = conn.op.P.detach().cpu().numpy()
                 dpos_epoch = np.abs(curr_pos - pre_pos_epoch[i]).mean()
                 pos_logs[f'dpos{i}_epoch'] = dpos_epoch
                 pre_pos_epoch[i] = curr_pos.copy()
@@ -295,6 +297,5 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         self.fit_runs.append(self.hist)
         dict1 = self.get_metrics_history_dict(np.array(self.hist_train), prefix="")
         dict2 = self.get_metrics_history_dict(np.array(self.hist_valid), prefix="val_")
-        dict3 = self.get_metrics_history_dict(np.array(self.pos_logs), prefix="pos_")
-        history = {**dict1, **dict2, **dict3}
+        history = {**dict1, **dict2, **self.pos_logs}
         return history
