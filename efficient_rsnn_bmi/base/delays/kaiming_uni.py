@@ -1,8 +1,5 @@
 from stork.initializers import Initializer
-import torch
 from torch.nn import init
-
-import math
 import json
 
 class KaimingUniformInitializer(Initializer):

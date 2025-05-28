@@ -10,7 +10,7 @@ from stork.models import (
     loss_stacks,
     generators
 )
-from efficient_rsnn_bmi.base.delay import CustomDelayConnection
+from efficient_rsnn_bmi.base.delays.delay import CustomDelayConnection
 
 class DelayRecurrentSpikingModel(RecurrentSpikingModel):
     def __init__(self, *args, **kwargs):
