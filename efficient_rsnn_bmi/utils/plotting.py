@@ -176,6 +176,20 @@ def plot_activity_CST(
     print("This is the score", scores)
 
     inp = model.input_group.get_flattened_out_sequence().detach().cpu().numpy()
+    if hasattr(model, "n_keys"):
+        # this is the interpolation one
+        batch_size, reduced_T, units = inp.shape
+        full_T = model.nb_time_steps  # e.g., 500
+        n_keys = model.n_keys         # e.g., 8
+
+        inp_padded = np.zeros((batch_size, full_T, units), dtype=inp.dtype)
+        for i in range(reduced_T):
+            t = i * n_keys
+            if t < full_T:
+                inp_padded[:, t, :] = inp[:, i, :]
+
+        inp = inp_padded
+        
     hidden_groups = model.groups[1:-1]
     hid_activity = [
         g.get_flattened_out_sequence().detach().cpu().numpy() for g in hidden_groups

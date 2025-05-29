@@ -19,4 +19,5 @@ class CustomInputGroup(InputGroup):
         self.local_data = reshaped
     
     def get_flattened_out_sequence(self):
-        return self.get_state_sequence("out")
+        flat_shape = self.get_state_sequence("out").shape
+        return self.get_state_sequence("out").reshape(flat_shape)  
