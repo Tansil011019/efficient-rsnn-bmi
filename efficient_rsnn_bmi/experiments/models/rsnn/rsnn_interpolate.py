@@ -5,8 +5,6 @@ from stork.models import (
     generators
 )
 
-from efficient_rsnn_bmi.base.interpolation.lif import InterpolationLIFGroup
-
 from .rsnn import BaselineRecurrentSpikingModel
 
 class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
@@ -82,67 +80,22 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
         self.to(self.device)
 
     def run(self, x_batch, cur_batch_size=None, record=False):
-        print("=" * 50)
-        print("RUN")
         if cur_batch_size is None:
             cur_batch_size = len(x_batch)
         self.reset_states(cur_batch_size)
         self.input_group.feed_data(x_batch) #[250, 500, 96]
         lower_bounds = []
         for t in range(0, self.nb_time_steps, self.n_keys): # the interpolation change here
-            print(f"Time step: {t}")
             stork.nodes.base.CellGroup.clk = t
-            if self.n_keys == 1:
-                self.evolve_all()
-                self.propagate_all()
-            else:
-                if t == 0:
-                    self.evolve_all()
-                    self.propagate_all()
-                    for g in self.groups[1:]:
-                        # print("Lower Bound")
-                        # For my implementation just two group, lif and readout
-                        # (250, 64), (250, 2)
-                        # print(f"Group Input: {g.input.shape}") 
-                        lower_bounds.append(g.input.clone()) # got all lower bound
-                        # print(f"Lower Bounds: {len(lower_bounds)}")
-                else:
-                    # Evolve the input groups
-                    input_group = self.groups[0]
-                    input_group.evolve()
-                    input_group.clear_input()
+            self.forward_interpolation(t, lower_bounds=lower_bounds, record=record)
 
-                    # TODO: Miss connection so that the upper threshold == lower threshold (dont forget to exclude the upper threshold so that it used on the next key step)
-                    for i, g in enumerate(self.groups[1:]):
-                        lower_bound = lower_bounds[i]
-                        upper_bound = g.input.clone()
-                        # print(f"Lower Bound Shape: {lower_bound.shape}") # (250, 64)
-                        # print(f"Upper Bound Shape: {upper_bound.shape}") # (250, 64)
-                        interpolation = self.interpolate(lower_bound, upper_bound, self.n_keys)
-                        print(f"Lower Bound: {lower_bound}")
-                        print(f"Upper Bound: {upper_bound}")
-                        print(f"Interpolation: {interpolation}")
-                        print(f"Interpolation Shape: {interpolation.shape}")
-                        for input in interpolation:
-                            print('Checking for the changing input')
-                            print(f"Input: {g.input}")
-                            print(f"Input Shape: {g.input.shape}")
-                            g.add_to_state(g.default_target, input)
-                            print(f"Input: {g.input}")
-                            print(f"Input Shape: {g.input.shape}")
-                            g.evolve()
-                            g.clear_input()
-                            print(f"Output: {g.out}")
-                            print(f"Output Shape: {g.out.shape}")
-
-                            raise ValueError("This is breakpoint")
-                        lower_bounds[i] = upper_bound
-                    
-            self.execute_all()
-            if record:
-                self.monitor_all()
+        # for the left over
+        max_t = self.nb_time_steps - 1
+        remaining = (self.nb_time_steps - 1) % self.n_keys
+        if (remaining != 0):
+            self.forward_interpolation(max_t, remaining, lower_bounds, record)
+            
         self.out = self.output_group.get_out_sequence()
-        print("RUN=" * 50)
         return self.out
 
     def interpolate(self, A, B, n_steps):
@@ -152,6 +105,46 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
         interpolated = torch.lerp(A, B, alphas)
 
         return interpolated # it should be (n_steps + 1, 250, 64)
+    
+    def forward_interpolation(self, t, key=None, lower_bounds=[], record=False):
+        keys = key if key else self.n_keys
+        if keys == 1:
+                self.evolve_all()
+                self.propagate_all()
+        else:
+            if t == 0:
+                self.evolve_all()
+                self.propagate_all()
+                for g in self.groups[1:]:
+                    lower_bounds.append(g.input.clone()) # got all lower bound
+            else:
+                self.evolve_all() # already evolve the 0.4438 one
+
+                # Update first input
+                first_con = self.connections[0]
+                first_con.propagate()
+
+                for i, g in enumerate(self.groups[1:]):
+                    lower_bound = lower_bounds[i]
+                    upper_bound = g.input.clone()
+
+                    interpolation = self.interpolate(lower_bound, upper_bound, keys)
+                    g.states['input'] = interpolation[1].clone()
+                    g.input = g.states['input'] # change the input to current interpolation time step
+
+                    for input in interpolation[2:]: # update till before upper bound
+                        g.evolve()
+                        g.clear_input()
+                        g.states['input'] = input.clone()
+                        g.input = g.states['input']
+
+                    connection = self.connections[i+1]
+                    connection.propagate() # update the next input 
+                    lower_bounds[i] = upper_bound
+
+        self.execute_all()
+        if record:
+            self.monitor_all()
 
 
         
