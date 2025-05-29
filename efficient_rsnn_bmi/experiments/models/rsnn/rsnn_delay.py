@@ -121,8 +121,6 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         metrics = []
         data_iter = self.data_generator(test_dataset, shuffle=False)
         for local_X, local_y in tqdm(data_iter, desc="Evaluating", total=len(data_iter)):
-            # print(f"Local X: {local_X}")
-            # print(f"Local X Shape: {local_X.shape}") # (250, 500, 96) -> (batch size, nb time steps, in chann)
             output = self.forward_pass(local_X, cur_batch_size=len(local_X))
             # Trimming the result 
             # It’s like predicting the next words in a sentence — if the real sentence ends at word 10, we don’t
@@ -227,9 +225,6 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
     def fit_validate(
         self, dataset, valid_dataset, nb_epochs=10, verbose=True, wandb=None
     ):
-        print("=" * 50)
-        print("FIT VALIDATE")
-        print("=" * 50)
         self.hist_train = []
         self.hist_valid = []
         self.pos_logs = []

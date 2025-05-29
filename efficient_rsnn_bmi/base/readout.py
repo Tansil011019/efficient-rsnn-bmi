@@ -303,7 +303,6 @@ class CustomReadoutGroup(CellGroup):
             self.syn = self.get_state_tensor("syn", state=self.syn)
 
     def forward(self):
-        # synaptic & membrane dynamics
         if not self.is_delta_syn:
             new_syn = self.dcy_syn * self.syn + self.input
             new_mem = self.dcy_mem * self.out + self.scl_mem * self.syn
@@ -313,4 +312,3 @@ class CustomReadoutGroup(CellGroup):
         self.out = self.states["out"] = new_mem
         if not self.is_delta_syn:
             self.syn = self.states["syn"] = new_syn
-        # self.out_seq.append(self.out)

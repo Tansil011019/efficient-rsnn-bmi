@@ -107,10 +107,6 @@ def get_model (cfg, nb_inputs, dtype, data=None):
                     is_delta_syn=cfg.model.delta_synapses,
                 )
             )
-
-            print("Readout group shape: ", readout_group.shape)
-            print("Current source group shape: ", current_src_grp.shape)
-            print(current_src_grp, readout_group)
             con_ro = model.add_connection(
                 Connection(current_src_grp, readout_group, dtype=dtype)
             )

@@ -240,11 +240,6 @@ class CustomLIFGroup(CellGroup):
         return out, rst
 
     def forward(self):
-        # spike & reset
-        print("=" * 50)
-        print("CUSTOM LIF GROUP FORWARD")
-        print(f"Membrane shape: {self.mem.shape}") # [250, 96]
-        print(f"Membrane: {self.mem}")
         new_out, rst = self.get_spike_and_reset(self.mem)
 
         # synaptic & membrane dynamics
@@ -264,7 +259,6 @@ class CustomLIFGroup(CellGroup):
         self.mem = self.states["mem"] = new_mem
         if not self.is_delta_syn:
             self.syn = self.states["syn"] = new_syn
-        print("=" * 50)
 
     def get_flattened_out_sequence(self):
         return self.get_state_sequence("out")
