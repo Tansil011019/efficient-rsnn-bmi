@@ -1,8 +1,7 @@
 batchsize: 250
 # nb_epochs_train: 200
 nb_epochs_train: 1
-# nb_epochs_pretrain: 100
-nb_epochs_pretrain: 1
+nb_epochs_pretrain: 100
 
 SG_beta: 20
 

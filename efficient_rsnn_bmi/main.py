@@ -144,8 +144,6 @@ def main(config: DictConfig) -> None:
         else:
             logger.info("No Pretraining or Model State Loaded.")
             pretrained_model = None
-        
-        raise ValueError("BREAKPOINT")
             
 
 
