@@ -175,3 +175,4 @@ outputs/
 data/datasets/
 *.pth
 *.png
+states/
