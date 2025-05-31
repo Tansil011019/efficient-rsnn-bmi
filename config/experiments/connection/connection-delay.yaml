@@ -1,0 +1,10 @@
+_target_: efficient_rsnn_bmi.base.delays.delay.CustomDelayConnection
+
+kernel_count: 1
+version: gauss
+groups: 1
+stride: 1
+
+# For stopping the decreasing of sig (variance)
+sig_threshold: 0.23
+sig_stop_ep: 0.25 # 1/4 epoch

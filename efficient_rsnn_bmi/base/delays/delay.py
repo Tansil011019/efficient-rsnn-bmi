@@ -45,8 +45,8 @@ class CustomDelayConnection(BaseConnection):
         self.groups = groups
         self.dilated_kernel_size = dilated_kernel_size
         self.version = version
-        self.left_padding = left_padding
-        self.right_padding = right_padding
+        self.left_padding = int(left_padding)
+        self.right_padding = int(right_padding)
         self.stride = stride
         self.delay_buffer = deque()
         self.conv_out_size = None

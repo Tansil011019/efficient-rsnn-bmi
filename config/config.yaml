@@ -1,0 +1,26 @@
+defaults:
+  - _self_
+  - datasets: data
+  - experiments: baseline
+  - evaluation: eval-default
+  - override hydra/hydra_logging: disabled
+
+dtype: 'float32'
+
+# If pretraining is False, you can set the load_state to a path to load a pre-trained model for each monkey
+# If state is not found, a model will be trained from scratch on each session
+pretraining: True
+load_state: 
+  loco: False
+  indy: False
+
+train_monkeys:
+  - indy
+  - loco
+
+seed: 42 # change this later
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .

@@ -1,16 +1,12 @@
 import torch
+from hydra.utils import instantiate, get_class
 
-from efficient_rsnn_bmi.experiments.models.rsnn.rsnn import BaselineRecurrentSpikingModel
-from efficient_rsnn_bmi.base.lif import CustomLIFGroup
-from efficient_rsnn_bmi.base.readout import CustomReadoutGroup, AverageReadouts
-
-from stork.nodes import InputGroup
 from stork.layers import Layer
-from stork.connections import Connection
+
+from efficient_rsnn_bmi.base.readout import AverageReadouts
 
 from .activation import get_activation_function
 from .regularization import get_regularizers
-from .dataloader import compute_input_firing_rates
 from .initializers import get_initializers
 from .readout import get_custom_readouts
 
@@ -18,99 +14,128 @@ from efficient_rsnn_bmi.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def get_model (cfg, nb_inputs, dtype, data=None):
-    """
-    Get the model based on the configuration.
-    """
-    nb_time_steps = int(cfg.datasets.sample_duration / cfg.datasets.dt)
-    nb_outputs = cfg.datasets.nb_outputs
-    
-    model = BaselineRecurrentSpikingModel(
-        cfg.training.batchsize,
-        nb_time_steps = nb_time_steps,
+def get_model (
+    config, # just experiment config
+    nb_inputs, 
+    nb_outputs,
+    dt,
+    input_firing_rates,
+    nb_time_steps,
+    dtype, 
+    device='cpu',
+    max_delay = None,
+    verbose=False,
+):
+    model = instantiate(
+        config.model,
+        batch_size=config.training.batchsize,
+        nb_time_steps=nb_time_steps,
         nb_inputs = nb_inputs,
-        device = cfg.device,
-        dtype = dtype,
+        device=device,
+        dtype=dtype
     )
 
-    activation_function = get_activation_function(cfg)
+    activation_function = get_activation_function(config)
+    regularizers = get_regularizers(config)
 
-    regularizers = get_regularizers(cfg)
+    mean1, mean2 = input_firing_rates
 
-    if data is not None:
-        mean1, mean2 = compute_input_firing_rates(data, cfg)
-    else:
-        mean1 = None
-
-    hidden_init, readout_init = get_initializers(cfg, mean1, dtype)
+    hidden_init, readout_init = get_initializers(
+        config, 
+        dt=dt, 
+        nu=mean1,
+        max_delay=max_delay,
+        dtype=dtype,
+    )
 
     input_group = model.add_group(
-        InputGroup(
-            nb_inputs,
-            dropout_p = cfg.model.dropout_p,
+        instantiate(
+            config.input,
+            shape=nb_inputs,
         )
     )
 
     current_src_grp = input_group
 
-    hidden_neuron_kwargs = {
-        "tau_mem": cfg.model.tau_mem,
-        "tau_syn": cfg.model.tau_syn,
-        "activation": activation_function,
-        "dropout_p": cfg.model.dropout_p,
-        "het_timescales": cfg.model.het_timescales,
-        "learn_timescales": cfg.model.learn_timescales,
-        "is_delta_syn": cfg.model.delta_synapses,
+    neuron_class = get_class(config.neuron._target_)
+    neuron_kwargs = {k: v for k, v in config.neuron.items() if k != '_target_'}
+    neuron_kwargs = {
+        **neuron_kwargs,
+        "activation": activation_function
     }
+    
+    connection_class = get_class(config.connection._target_)
+    connection_kwargs = {k: v for k, v in config.connection.items() if k != '_target_'}
+    if config.name == "synaps-delay" and max_delay is not None:
+        connection_kwargs = {
+            **connection_kwargs,
+            "dilated_kernel_size": max_delay,
+            "left_padding": max_delay - 1,
+            "right_padding": (max_delay - 1) // 2,
+            "sig_init": max_delay // 2,
+        }
+    print(connection_kwargs)
 
-    for i in range(cfg.model.nb_hidden):
+    for i in range(config.nb_hidden):
         hidden_layer = Layer(
             name='hidden',
-            model = model,
-            size= cfg.model.hidden_size[i],
-            input_group = current_src_grp,
-            recurrent = cfg.model.recurrent[i],
-            regs= regularizers,
-            neuron_class=CustomLIFGroup,
-            neuron_kwargs=hidden_neuron_kwargs,
-            connection_kwargs={}
+            model=model,
+            size=config.hidden_size[i],
+            input_group=current_src_grp,
+            recurrent=config.recurrent[i],
+            regs=regularizers,
+            neuron_class=neuron_class,
+            neuron_kwargs=neuron_kwargs,
+            connection_class=connection_class,
+            connection_kwargs=connection_kwargs
         )
 
         current_src_grp = hidden_layer.output_group
-
         hidden_init.initialize(hidden_layer)
 
-        if i == 0 and nb_inputs == 192 and data is not None:
+        if i == 0 and nb_inputs == 192 and mean1 is not None:
             with torch.no_grad():
                 hidden_layer.connections[0].get_weights()[:, :96] /= mean2 / mean1
 
-        if cfg.model.multiple_readouts:
-            logger.info("Adding custom readout groups")
-            custom_readouts = get_custom_readouts(cfg)
-            for g in custom_readouts:
-                model.add_group(g)
-                con_ro = model.add_connection(Connection(current_src_grp, g, dtype=dtype))
-                readout_init.initialize(con_ro)
+        if config.multiple_readouts:
+            # custom_readouts = get_custom_readouts(config)
+            # custom_readouts = get_custom_readouts(cfg)
+            # for g in custom_readouts:
+            #     model.add_group(g)
+            #     con_ro = model.add_connection(Connection(current_src_grp, g, dtype=dtype))
+            #     readout_init.initialize(con_ro)
             
-            model.add_group(AverageReadouts(model.groups[-len(custom_readouts) :]))
-        
-        else:
-            logger.info("Adding single readout group")
+            # model.add_group(AverageReadouts(model.groups[-len(custom_readouts) :]))
+            raise NotImplementedError("Multiple Readout Groups Haven't Implemented Yet")
+        else: 
             readout_group = model.add_group(
-                CustomReadoutGroup(
-                    nb_outputs,
-                    tau_mem=cfg.model.tau_mem_readout,
-                    tau_syn=cfg.model.tau_syn_readout,
-                    het_timescales=cfg.model.het_timescales_readout,
-                    learn_timescales=cfg.model.learn_timescales_readout,
-                    initial_state=-1e-2,
-                    is_delta_syn=cfg.model.delta_synapses,
+                instantiate(
+                    config.readout,
+                    shape=nb_outputs,
                 )
             )
-            con_ro = model.add_connection(
-                Connection(current_src_grp, readout_group, dtype=dtype)
+            conn_ro = model.add_connection(
+                instantiate(
+                    config.connection,
+                    src=current_src_grp,
+                    dst=readout_group,
+                    dtype=dtype,
+                    dilated_kernel_size=max_delay,
+                    left_padding=max_delay-1,
+                    right_padding=(max_delay-1)//2,
+                    sig_init=max_delay//2
+                ) if config.name == 'synaps-delay' and max_delay is not None else
+                instantiate(
+                    config.connection,
+                    src=current_src_grp,
+                    dst=readout_group,
+                    dtype=dtype,
+                )
             )
-
-            readout_init.initialize(con_ro)
-
+            readout_init.initialize(conn_ro)
+    
+    if verbose:
+        logger.info("=" * 50)
+        logger.info(f"Summary:{model.summary()}")
+        logger.info("=" * 50)
     return model

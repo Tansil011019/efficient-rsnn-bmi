@@ -1,9 +1,8 @@
 import torch
 from torch.utils.data import Dataset
 
-from data.config.dataloader import DatasetLoaderConfig
-from data.neurobench.dataloader import DatasetLoader
-
+# from data.config.dataloader import DatasetLoaderConfig
+from efficient_rsnn_bmi.base.dataloader import DatasetLoader
 from efficient_rsnn_bmi.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -11,15 +10,15 @@ logger = get_logger(__name__)
 def get_dataloader(cfg, dtype=torch.float32):
 
     dataloader = DatasetLoader(
-        basepath=cfg.datasets.data_dir,
-        ratio_val=cfg.datasets.ratio_val,
-        random_val=cfg.datasets.random_val,
-        extend_data=cfg.datasets.extend_data,
-        sample_duration=cfg.datasets.sample_duration,
-        remove_segments_inactive=cfg.datasets.remove_segments_inactive,
-        p_drop=cfg.datasets.p_drop,
-        p_insert=cfg.datasets.p_insert,
-        jitter_sigma=cfg.datasets.jitter_sigma,
+        basepath=cfg.data_dir,
+        ratio_val=cfg.ratio_val,
+        random_val=cfg.random_val,
+        extend_data=cfg.extend_data,
+        sample_duration=cfg.sample_duration,
+        remove_segments_inactive=cfg.remove_segments_inactive,
+        p_drop=cfg.p_drop,
+        p_insert=cfg.p_insert,
+        jitter_sigma=cfg.jitter_sigma,
         dtype=dtype
     )
 
@@ -30,9 +29,9 @@ def compute_input_firing_rates(data, cfg):
     mean2 = 0
 
     for i in range(len(data)):
-        mean1 += torch.sum(data[i][0][:, :96]) / cfg.datasets.sample_duration / 96
+        mean1 += torch.sum(data[i][0][:, :96]) / cfg.sample_duration / 96
         try:
-            mean2 += torch.sum(data[i][0][:, 96:]) / cfg.datasets.sample_duration / 96
+            mean2 += torch.sum(data[i][0][:, 96:]) / cfg.sample_duration / 96
         except:
             continue
 

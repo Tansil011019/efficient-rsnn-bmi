@@ -1,8 +1,8 @@
 batchsize: 250
-nb_epochs_train: 200
-# nb_epochs_train: 1
-nb_epochs_pretrain: 100
-# nb_epochs_pretrain: 1
+# nb_epochs_train: 200
+nb_epochs_train: 1
+# nb_epochs_pretrain: 100
+nb_epochs_pretrain: 1
 
 SG_beta: 20
 
@@ -17,14 +17,15 @@ nb_masked_timesteps: 20
 
 lr_scheduler: 'cosine' 
 lr: 2e-3
+lr_P: 0.01 # for delay position learning rate
 
 optimizer: "SMORMS3"
 
 verbose: True
 
 is_prune: True
-nb_epochs_retrain: 100
-# nb_epochs_retrain: 1
+# nb_epochs_retrain: 100
+nb_epochs_retrain: 1
 prune_percentage_start: 0.40
 tolerance: 0.02 # how many percentages of performance drop is tolerable, 0.03 -> 3%
 prune_precision: [0.1, 0.05] # The pruning process will go through the list one by one, for example [0.1, 0.05], 

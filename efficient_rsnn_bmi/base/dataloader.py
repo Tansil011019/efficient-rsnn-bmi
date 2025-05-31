@@ -2,7 +2,6 @@
 
 import numpy as np
 import torch
-import stork
 from .ras_dataset import RasDataset
 from neurobench.datasets.primate_reaching import PrimateReaching
 from neurobench.datasets.utils import download_url
@@ -12,8 +11,6 @@ import os
 from efficient_rsnn_bmi.utils.logger import get_logger
 
 logger = get_logger(__name__)
-SAMPLING_RATE = 4e-3
-
 
 class PretrainPrimateReaching(PrimateReaching):
     """
@@ -269,7 +266,8 @@ class DatasetLoader:
 
         ds_train, ds_valid, ds_test = [], [], []
 
-        for filename in filenames:
+        for i, filename in enumerate(filenames):
+            logger.info(f"[{i+1}/{len(filenames)}] Loading session: {filename}")
             monkey_ds_train, monkey_ds_valid, monkey_ds_test = (
                 self.get_single_session_data(filename)
             )

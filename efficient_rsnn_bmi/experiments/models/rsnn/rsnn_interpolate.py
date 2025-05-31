@@ -4,6 +4,8 @@ from stork.models import (
     loss_stacks,
     generators
 )
+import numpy as np
+from tqdm import tqdm
 
 from .rsnn import BaselineRecurrentSpikingModel
 
@@ -146,5 +148,43 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
         if record:
             self.monitor_all()
 
+    def evaluate(self, test_dataset, train_mode=False):
+            self.train(train_mode)
+            self.prepare_data(test_dataset)
+            metrics = []
+            data_iter = self.data_generator(test_dataset, shuffle=False)
+            for local_X, local_y in tqdm(data_iter, desc="Evaluating", total=len(data_iter)):
+                output = self.forward_pass(local_X, cur_batch_size=len(local_X))
+                total_loss = self.get_total_loss(output, local_y)
+                # store loss and other metrics
+                metrics.append(
+                    [self.out_loss.item(), self.reg_loss.item()] + self.loss_stack.metrics
+                )
 
+            return np.mean(np.array(metrics), axis=0)
         
+    def train_epoch(self, dataset, shuffle=True):
+        self.train(True)
+        self.prepare_data(dataset)
+        metrics = []
+        data_iter = self.data_generator(dataset, shuffle=shuffle)
+        for local_X, local_y in tqdm(data_iter, desc="Training", total=len(data_iter)):
+            output = self.forward_pass(local_X, cur_batch_size=len(local_X))
+            total_loss = self.get_total_loss(output, local_y)
+
+            # store loss and other metrics
+            metrics.append(
+                [self.out_loss.item(), self.reg_loss.item()] + self.loss_stack.metrics
+            )
+
+            # Use autograd to compute the backward pass.
+            self.optimizer_instance.zero_grad()
+            total_loss.backward()
+
+            self.optimizer_instance.step()
+            self.apply_constraints()
+            
+        if self.scheduler_instance is not None:
+            self.scheduler_instance.step()
+
+        return np.mean(np.array(metrics), axis=0)

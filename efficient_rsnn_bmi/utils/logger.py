@@ -1,17 +1,15 @@
 import logging
 import sys
 import colorlog
-import pprint
 
-def get_logger(name=None, logger_file="main.log"):
-    logger = colorlog.getLogger(name or "rsnn")
+def get_logger(name=None):
+    logger = colorlog.getLogger(name or "Baseline")
 
     if logger.hasHandlers():
         logger.handlers.clear()
 
     logger.setLevel(logging.INFO)
     handler = colorlog.StreamHandler(stream=sys.stdout)
-    file_handler = logging.FileHandler(logger_file, mode="w")
 
     formatter = colorlog.ColoredFormatter(
         '%(asctime_log_color)s[%(asctime)s] '
@@ -60,9 +58,7 @@ def get_logger(name=None, logger_file="main.log"):
     )
 
     handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
     logger.addHandler(handler)
-    logger.addHandler(file_handler)
     logger.propagate = False
 
     return logger

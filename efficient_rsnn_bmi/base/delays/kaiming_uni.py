@@ -77,10 +77,10 @@ class KaimingUniformInitializer(Initializer):
                 "after": sig_after.detach().cpu().flatten().tolist()
             }
 
-            with open('init_delay_weight.json', "w") as f:
-                json.dump(weight, f)
-            with open('init_delay_position.json', "w") as f:
-                json.dump(position, f)    
-            with open('init_delay_sig.json', "w") as f:
-                json.dump(sig, f)
+            # with open('init_delay_weight.json', "w") as f:
+            #     json.dump(weight, f)
+            # with open('init_delay_position.json', "w") as f:
+            #     json.dump(position, f)    
+            # with open('init_delay_sig.json', "w") as f:
+            #     json.dump(sig, f)
     

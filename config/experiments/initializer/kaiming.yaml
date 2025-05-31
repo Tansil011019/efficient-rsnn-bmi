@@ -1,0 +1,3 @@
+_target_: efficient_rsnn_bmi.base.delays.kaiming_uni.KaimingUniformInitializer
+scaling: None
+verbose: True

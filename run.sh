@@ -4,6 +4,8 @@
 set -e
 
 entrypoint="efficient_rsnn_bmi.main"
+experiment="baseline"
+
 extra_args=()
 
 while [[ $# -gt 0 ]]; do
@@ -24,9 +26,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ ${#extra_args[@]} -eq 0 ]; then
-    echo "Usage: ./run.sh --entrypoint <script.py> model_name=<model_name> experiment=<experiment_name>"
+    echo "Usage: ./run.sh --entrypoint <script.py> model=<model_name> experiment=<experiment_name>"
     exit 1
 fi
+
+for arg in "${extra_args[@]}"; do
+    if [[ "$arg" == experiment=* ]]; then
+        experiment="${arg#*=}"
+    fi
+done
 
 printf "\n"
 printf "[PARAMETERS]\n"
@@ -47,10 +55,10 @@ else
     exit 1
 fi
 
-mkdir -p outputs/log
+mkdir -p outputs/log/${experiment}
 
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-logfile="outputs/log/main_${experiment_name}_${timestamp}.log"
+logfile="outputs/log/${experiment}/${experiment}_${timestamp}.log"
 
 run_cmd="python3 -m $entrypoint ${extra_args[@]} | tee \"$logfile\""
 echo "Running command: $run_cmd"

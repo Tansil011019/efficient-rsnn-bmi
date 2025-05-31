@@ -173,7 +173,7 @@ def plot_activity_CST(
     # Run model once and get activities
     # print(f"Evaluating model... {data[0][0].shape}") # (500, 96)
     scores = model.evaluate(data)
-    print("This is the score", scores)
+    print("Evaluation Score:", scores)
 
     inp = model.input_group.get_flattened_out_sequence().detach().cpu().numpy()
     if hasattr(model, "n_keys"):

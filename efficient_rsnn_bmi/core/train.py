@@ -12,9 +12,9 @@ from .pruning import prune_model
 
 from efficient_rsnn_bmi.utils.plotting import plot_activity_snapshot
 
-def configure_model(model, cfg, train_data, dtype):
+def configure_model(model, cfg, nb_time_steps, dt, dtype, seed=False):
 
-    loss_stack = get_train_loss(cfg, train_data)
+    loss_stack = get_train_loss(cfg, nb_time_steps)
     opt, opt_kwargs = get_optimizer(cfg, dtype)
     
     if cfg.training.lr_scheduler is not None:
@@ -24,8 +24,8 @@ def configure_model(model, cfg, train_data, dtype):
         scheduler_kwargs = None
         
     def worker_init_fn(worker_id):
-        np.random.seed(cfg.seed + worker_id)
-        random.seed(cfg.seed + worker_id)
+        np.random.seed(seed + worker_id)
+        random.seed(seed + worker_id)
     
     generator = StandardGenerator(nb_workers=cfg.nb_workers, worker_init_fn=worker_init_fn)
 
@@ -40,7 +40,7 @@ def configure_model(model, cfg, train_data, dtype):
         optimizer_kwargs=opt_kwargs,
         scheduler=scheduler,
         scheduler_kwargs=scheduler_kwargs,
-        time_step=cfg.datasets.dt,
+        time_step=dt,
     )
 
     return model
@@ -57,7 +57,7 @@ def train_validate_model(
 
     if cfg.plotting.plot_snapshots:
         fix, ax = plot_activity_snapshot(
-            model, valid_data, save_path=snapshot_prefix / "snapshot_before.png"
+            model, valid_data, save_path=f"{snapshot_prefix}snapshot_before.png"
         )
 
     history = model.fit_validate(
@@ -71,7 +71,7 @@ def train_validate_model(
         fig, ax = plot_activity_snapshot(
             model,
             valid_data,
-            save_path=snapshot_prefix / "snapshot_after_e{}.png".format(nb_epochs),
+            save_path=f"{snapshot_prefix}snapshot_after_e{nb_epochs}.png",
         )
 
     return model, history

@@ -1,0 +1,32 @@
+defaults:
+  - _self_
+  - initializer: fluctuation
+  - model: baseline
+  - input: input-group
+  - neuron: custom-lif-group
+  - readout: custom-readout
+  - training: training
+  - plotting: plotting
+  - connection: connection
+
+name: baseline
+
+# Hidden Layer
+nb_hidden: 1
+hidden_size: [64]
+recurrent: [True]
+
+# Readout
+multiple_readouts: False
+
+is_half: True
+
+# Initializer
+compute_nu: True
+
+# Activation Function
+stochastic: False
+
+nb_workers: 2
+
+device: "cuda"

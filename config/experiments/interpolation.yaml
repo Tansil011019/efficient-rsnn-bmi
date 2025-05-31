@@ -1,0 +1,29 @@
+defaults:
+  - _self_
+  - initializer: fluctuation
+  - model: interpolation
+  - input: input-group-interpolation
+  - neuron: custom-lif-group
+  - readout: custom-readout
+  - training: training
+  - plotting: plotting
+  - connection: connection
+
+name: interpolation
+
+nb_hidden: 1
+hidden_size: [64]
+recurrent: [True] 
+
+multiple_readouts: False
+
+is_half: True
+
+# Initializer
+compute_nu: True
+
+stochastic: False
+
+nb_workers: 2
+
+device: "cuda:1"

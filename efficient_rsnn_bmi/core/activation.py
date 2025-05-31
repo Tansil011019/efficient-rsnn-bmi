@@ -5,7 +5,7 @@ def get_activation_function(cfg):
     Get the activation function based on the configuration.
     """
     activation_function = stork.activations.CustomSpike
-    if cfg.model.stochastic:
+    if cfg.stochastic:
         activation_function.escape_noise_type = "sigmoid"
     else:
         activation_function.escape_noise_type = "step"

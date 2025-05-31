@@ -16,16 +16,14 @@ def _choose_loss(cfg):
 
     return loss_class
 
-def get_train_loss(cfg, train_data):
+def get_train_loss(cfg, nb_time_steps):
 
     loss_class = _choose_loss(cfg)
     
-    args = {}
+    args = {}  
     
     # Mask early timesteps
     if cfg.training.mask_early_timesteps:
-
-        nb_time_steps = int(cfg.datasets.sample_duration / cfg.datasets.dt)
         mask = torch.ones(nb_time_steps)
         mask[: cfg.training.nb_masked_timesteps] = 0
         mask = torch.stack([mask, mask], dim=1)

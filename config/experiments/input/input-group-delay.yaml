@@ -1,0 +1,2 @@
+_target_: efficient_rsnn_bmi.base.delays.inputs.CustomInputGroup
+dropout_p: 0.3

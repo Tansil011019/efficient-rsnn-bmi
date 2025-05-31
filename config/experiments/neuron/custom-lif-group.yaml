@@ -1,0 +1,10 @@
+_target_: efficient_rsnn_bmi.base.lif.CustomLIFGroup
+dropout_p: 0.3
+
+tau_mem: 20e-3
+tau_syn: 10e-3
+
+het_timescales: True
+learn_timescales: True
+
+is_delta_syn: False

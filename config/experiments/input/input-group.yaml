@@ -1,0 +1,2 @@
+_target_ : stork.nodes.InputGroup
+dropout_p: 0.3

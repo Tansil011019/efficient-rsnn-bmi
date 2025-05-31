@@ -1,0 +1,11 @@
+_target_: efficient_rsnn_bmi.base.readout.CustomReadoutGroup
+
+tau_mem: 50e-3
+tau_syn: 10e-3
+
+het_timescales: True
+learn_timescales: True
+
+initial_state: -1e-2
+
+is_delta_syn: False

@@ -1,6 +1,7 @@
+from hydra.utils import instantiate
+
 import torch
 from stork.initializers import (
-    FluctuationDrivenCenteredNormalInitializer,
     DistInitializer,
 )
 
@@ -8,25 +9,41 @@ from efficient_rsnn_bmi.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def get_initializers(cfg, nu=None, dtype=torch.float32):
-    """
-    Get the initializers based on the configuration.
-    """
-    if nu is None or cfg.initializer.compute_nu is False:
-        nu = cfg.initializer.nu
-    else:
-        logger.info(f"Initializing with nu = {nu}")
+def get_initializers(
+        config, 
+        dt,
+        nu=None, 
+        max_delay=None,
+        dtype=torch.float32
+    ):
+    print(config)
+    print(config.name, config.name == "synaps-delay")
+    print(f"Max Delay: {max_delay} {max_delay is not None}")
+    if config.name == 'synaps-delay' and max_delay is not None:
+        hidden_init = instantiate(
+            config.initializer,
+            sig_init=max_delay // 2,
+            a=-max_delay // 2,
+            b=max_delay//2,
+        )
+        logger.info("Kaiming Initializer")
 
-    hidden_init = FluctuationDrivenCenteredNormalInitializer(
-        sigma_u=cfg.initializer.sigma_u,
-        nu=nu,
-        timestep=cfg.datasets.dt,
-        alpha=cfg.initializer.alpha,
-        dtype=dtype
-    )
+    else: 
+        if nu is None or config.compute_nu is False:
+            nu = config.initializer.nu
+        else:
+            logger.info(f"Initializing with nu = {nu}")
+
+        hidden_init = instantiate(
+            config.initializer,
+            nu=nu,
+            dtype=dtype,
+            timestep=dt
+        )
+        logger.info("Fluctuation Initializer")
 
     readout_init = DistInitializer(
-        dist=torch.distributions.Normal(0, 1), 
+        dist=torch.distributions.Normal(0, 1),
         scaling="1/sqrt(k)", 
         dtype=dtype
     )

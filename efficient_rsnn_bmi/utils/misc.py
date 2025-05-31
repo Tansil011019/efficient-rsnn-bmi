@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 def bisection(array, value):
     '''Given an ``array`` , and given a ``value`` , returns an index j such that ``value`` is between array[j]
@@ -34,5 +35,11 @@ def convert_np_float_to_float(obj):
         return [convert_np_float_to_float(i) for i in obj]
     elif isinstance(obj, np.float64):
         return float(obj)
+    elif isinstance(obj, torch.Tensor):
+        return obj.item() if obj.numel() == 1 else obj.tolist()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (np.floating, np.integer)):
+        return obj.item()
     else:
         return obj

@@ -199,7 +199,8 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         self.train(True)
         self.prepare_data(dataset)
         metrics = []
-        for local_X, local_y in self.data_generator(dataset, shuffle=shuffle):
+        data_iter = self.data_generator(dataset, shuffle=shuffle)
+        for local_X, local_y in tqdm(data_iter, desc="Training", total=len(data_iter)):
             output = self.forward_pass(local_X, cur_batch_size=len(local_X))
             if output.shape[1] > local_y.shape[1]:
                 output = output[:, :local_y.shape[1], :]

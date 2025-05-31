@@ -4,8 +4,9 @@ import stork
 def get_optimizer(cfg, dtype):
     
     opt_kwargs = {
-        "lr": cfg.training.lr
-        }
+        "lr": cfg.training.lr,
+        **({"lr_P": cfg.training.lr_P} if cfg.name == 'synaps-delay' else {})
+    }
     
     if cfg.training.optimizer == "adam":
         opt = torch.optim.Adam
