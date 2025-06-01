@@ -139,7 +139,7 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         '''
         Decrease the sig value along with the increase of the epoch
         '''
-        alpha = 1.0
+        alpha = 0
 
         if not self.dcls_connection:
             raise ValueError("No Dcls1d connection found in the model.")
@@ -158,8 +158,6 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
 
         if cur_ep < int(dec_end_ep) and sig > sig_threshold:
             alpha = (sig_threshold / sig_init) ** (1 / dec_end_ep)  
-        
-        if alpha != 1.0:
             for conn in self.dcls_connection:
                 if isinstance(conn.op, Dcls1d): conn.decrease_sig(alpha)
     

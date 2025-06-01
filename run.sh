@@ -4,7 +4,7 @@
 set -e
 
 entrypoint="efficient_rsnn_bmi.main"
-experiment="baseline"
+experiments="baseline"
 
 extra_args=()
 
@@ -31,8 +31,8 @@ if [ ${#extra_args[@]} -eq 0 ]; then
 fi
 
 for arg in "${extra_args[@]}"; do
-    if [[ "$arg" == experiment=* ]]; then
-        experiment="${arg#*=}"
+    if [[ "$arg" == experiments=* ]]; then
+        experiments="${arg#*=}"
     fi
 done
 
@@ -55,10 +55,10 @@ else
     exit 1
 fi
 
-mkdir -p outputs/log/${experiment}
+mkdir -p outputs/log/${experiments}
 
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-logfile="outputs/log/${experiment}/${experiment}_${timestamp}.log"
+logfile="outputs/log/${experiments}/${experiments}_${timestamp}.log"
 
 run_cmd="python3 -m $entrypoint ${extra_args[@]} | tee \"$logfile\""
 echo "Running command: $run_cmd"

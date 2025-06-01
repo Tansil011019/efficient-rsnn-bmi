@@ -64,9 +64,9 @@ def get_model (
         "activation": activation_function
     }
     
-    connection_class = get_class(config.connection._target_)
-    connection_kwargs = {k: v for k, v in config.connection.items() if k != '_target_'}
     if config.name == "synaps-delay" and max_delay is not None:
+        connection_class = get_class(config.connection_delay._target_)
+        connection_kwargs = {k: v for k, v in config.connection_delay.items() if k != '_target_'}
         connection_kwargs = {
             **connection_kwargs,
             "dilated_kernel_size": max_delay,
@@ -74,7 +74,9 @@ def get_model (
             "right_padding": (max_delay - 1) // 2,
             "sig_init": max_delay // 2,
         }
-    print(connection_kwargs)
+    else:
+        connection_class = get_class(config.connection._target_)
+        connection_kwargs = {k: v for k, v in config.connection.items() if k != '_target_'}
 
     for i in range(config.nb_hidden):
         hidden_layer = Layer(
@@ -115,16 +117,6 @@ def get_model (
                 )
             )
             conn_ro = model.add_connection(
-                instantiate(
-                    config.connection,
-                    src=current_src_grp,
-                    dst=readout_group,
-                    dtype=dtype,
-                    dilated_kernel_size=max_delay,
-                    left_padding=max_delay-1,
-                    right_padding=(max_delay-1)//2,
-                    sig_init=max_delay//2
-                ) if config.name == 'synaps-delay' and max_delay is not None else
                 instantiate(
                     config.connection,
                     src=current_src_grp,

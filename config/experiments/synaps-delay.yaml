@@ -7,7 +7,8 @@ defaults:
   - readout: custom-readout
   - training: training
   - plotting: plotting
-  - connection: connection-delay
+  - connection: connection
+  - connection_delay: connection-delay
 
 name: synaps-delay
 
