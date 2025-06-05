@@ -8,3 +8,6 @@ stride: 1
 # For stopping the decreasing of sig (variance)
 sig_threshold: 0.23
 sig_stop_ep: 0.25 # 1/4 epoch
+
+padding_mode: replicate
+padding_val: 0

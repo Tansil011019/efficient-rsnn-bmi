@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from collections import deque
+from typing import Literal
 
 class CustomDelayConnection(BaseConnection):
     def __init__(
@@ -16,6 +17,8 @@ class CustomDelayConnection(BaseConnection):
         left_padding,
         right_padding,
         sig_init,
+        padding_mode: Literal['zeros', 'replicate'] = 'zeros',
+        padding_val= 0,
         sig_threshold=0.5,
         version="gauss",
         sig_stop_ep=0.25,
@@ -53,6 +56,9 @@ class CustomDelayConnection(BaseConnection):
         self.sig_init = sig_init
         self.sig_threshold = sig_threshold
         self.sig_stop_ep = sig_stop_ep
+        self.padding_mode = padding_mode
+        self.padding_val = padding_val
+        
 
         self.op = Dcls1d(
             in_channels=src.shape[0], 
@@ -62,6 +68,7 @@ class CustomDelayConnection(BaseConnection):
             stride=stride,
             dilated_kernel_size=dilated_kernel_size,
             bias=bias, 
+            padding_mode=self.padding_mode,
             version=version
         )
 
@@ -98,10 +105,22 @@ class CustomDelayConnection(BaseConnection):
         if not self.propagate_gradients:
             preact = preact.detach()
         
+        # print(f"Preactivation: {preact[0]}")
+        # print(f"Preactivation shape: {preact.shape}")
+        # print(f"Preactivation all zero: {torch.all(preact == 0)}")
         preact = preact.unsqueeze(2) # (batch size = 250, channels = 96, time step = 1)
-        preact = F.pad(preact, (self.left_padding, self.right_padding), 'constant', 0)
+        # print(f"Preactivation after unsqueezing: {preact[0][0]}")
+        # print(f"Preactivation after unsqueezing shape: {preact.shape}")
+        if self.padding_mode == 'zeros':
+            preact = F.pad(preact, (self.left_padding, self.right_padding), 'constant', self.padding_val)
+        else:
+            preact = F.pad(preact, (self.left_padding, self.right_padding), 'replicate')
+        # print(f"Preactivation after padding: {preact[0][0]}")
+        # print(f"Preactivation after padding shape: {preact.shape}")
         conv_out = self.op(preact) # (batch size, channels = 64, time step = 13)
-
+        # print(f"Convolutional Out: {conv_out[0][0]}")
+        # print(f"Convolutional out shape: {conv_out.shape}")
+        
         # Getting the first delay kernel
         scheduled = self.delay_buffer.popleft() if self.delay_buffer else None
         

@@ -12,6 +12,7 @@ import json
 from efficient_rsnn_bmi.utils.logger import get_logger
 from efficient_rsnn_bmi.utils.misc import convert_np_float_to_float
 from efficient_rsnn_bmi.utils.state import save_model_state, load_model_state
+from efficient_rsnn_bmi.utils.helper import clean_gpu
 
 from efficient_rsnn_bmi.core.dataloader import get_dataloader, compute_input_firing_rates
 from efficient_rsnn_bmi.core.model import get_model
@@ -144,8 +145,11 @@ def main(config: DictConfig) -> None:
         else:
             logger.info("No Pretraining or Model State Loaded.")
             pretrained_model = None
-            
 
+        # CUDA BLOWN HERE   
+        clean_gpu()
+        
+    # ! Missinng some cleaning here
 
 
 if __name__ == "__main__":
