@@ -222,12 +222,14 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         return np.mean(np.array(metrics), axis=0)
 
     def fit_validate(
-        self, dataset, valid_dataset, nb_epochs=10, verbose=True, wandb=None
+        self, dataset, valid_dataset, best_model_path=None, nb_epochs=10, verbose=True, wandb=None, early_stop=False, patience=10
     ):
         self.hist_train = []
         self.hist_valid = []
         self.pos_logs = []
         self.wall_clock_time = []
+
+        assert early_stop and best_model_path is not None, "The best model path should not empty"
         
         pos_val = [
            np.copy(conn.op.P.detach().cpu().numpy()) 
@@ -235,6 +237,13 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
         ]
         pre_pos_epoch = pos_val.copy()
         pre_pos_5epochs = pos_val.copy()
+
+        if early_stop:
+            epochs_no_improve = 0
+            best_val_loss = np.inf
+            best_model_path = best_model_path
+
+            print(f"Early stopping enabled with patience of {patience}. Best model will be saved to '{best_model_path}'")
 
         for ep in range(nb_epochs):
             t_start = time.time()
@@ -260,6 +269,17 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
             self.hist_valid.append(ret_valid)
             self.pos_logs.append(pos_logs)
 
+            # Early Stopping
+            current_val_loss = ret_valid[0]
+            if current_val_loss < best_val_loss:
+                best_val_loss  = current_val_loss
+                epochs_no_improve = 0
+                torch.save(self.state_dict(), best_model_path)
+                if verbose: print(f"Validation loss improved to {best_val_loss:.6f}. Saving model.")
+            else:
+                epochs_no_improve += 1
+                if verbose: print(f"Validation loss did not improve. Patience: {epochs_no_improve}/{patience}")
+            
             if self.wandb is not None:
                 self.wandb.log(
                     {
@@ -284,6 +304,10 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
                         t_iter,
                     )
                 )
+
+            if epochs_no_improve >= patience:
+                print(f"\nEarly stopping triggered after {patience} epochs with no improvement.")
+                break
 
         self.hist = np.concatenate(
             (np.array(self.hist_train), np.array(self.hist_valid))

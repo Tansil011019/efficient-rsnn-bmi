@@ -16,9 +16,6 @@ def get_initializers(
         max_delay=None,
         dtype=torch.float32
     ):
-    print(config)
-    print(config.name, config.name == "synaps-delay")
-    print(f"Max Delay: {max_delay} {max_delay is not None}")
     if config.name == 'synaps-delay' and max_delay is not None:
         hidden_init = instantiate(
             config.initializer,

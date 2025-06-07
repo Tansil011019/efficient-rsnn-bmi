@@ -51,6 +51,8 @@ def train_validate_model(
     train_data,
     valid_data,
     nb_epochs,
+    early_stop=False,
+    patience=10,
     verbose=True,
     snapshot_prefix="",
 ):
@@ -65,6 +67,9 @@ def train_validate_model(
         valid_data,
         nb_epochs=nb_epochs,
         verbose=verbose,
+        early_stop=early_stop,
+        patience=patience,
+        best_model_path=f"{snapshot_prefix}best_model.pth"
     )
 
     if cfg.plotting.plot_snapshots:

@@ -8,6 +8,7 @@ from datetime import datetime
 
 import os
 import json
+import gc
 
 from efficient_rsnn_bmi.utils.logger import get_logger
 from efficient_rsnn_bmi.utils.misc import convert_np_float_to_float
@@ -46,111 +47,119 @@ def main(config: DictConfig) -> None:
     dtype = getattr(torch, config.dtype)
     dataloader = get_dataloader(config.datasets, dtype=dtype)
 
-    for monkey_name in config.train_monkeys:
-        nb_inputs = config.datasets.nb_inputs[monkey_name]
-        nb_time_steps = int(config.datasets.sample_duration / config.datasets.dt)
-        nb_outputs = config.datasets.nb_outputs
-        dt = config.datasets.dt
+    monkey_name = config.train_monkey # Train it one by one, my gpu cannot bare with all
+    nb_inputs = config.datasets.nb_inputs[monkey_name]
+    nb_time_steps = int(config.datasets.sample_duration / config.datasets.dt)
+    nb_outputs = config.datasets.nb_outputs
+    dt = config.datasets.dt
+    
+    # I just add the conditional for delay here, which not really good, open for improvement
+    max_delay = None
+    if config.experiments.name == "synaps-delay":
+        max_delay = config.experiments.max_delays // dt
+        max_delay = max_delay if max_delay % 2 == 1 else max_delay + 1
+
+    # * Phase 1: Pretraining
+    if config.pretraining:
+        logger.info("Phase 1: Pretraining")
+        logger.info("=" * 50)
         
-        # I just add the conditional for delay here, which not really good, open for improvement
-        max_delay = None
-        if config.experiments.name == "synaps-delay":
-            max_delay = config.experiments.max_delays // dt
-            max_delay = max_delay if max_delay % 2 == 1 else max_delay + 1
+        # 1.1 Data
+        logger.info("Phase 1.1: Collecting Data")
+        filenames = list(config.datasets.pretrain_filenames[monkey_name].values())
+        pretrain_data, pretrain_val_data, pretrain_test_data = dataloader.get_multiple_sessions_data(filenames)
 
-        # * Phase 1: Pretraining
-        if config.pretraining:
-            logger.info("Phase 1: Pretraining")
-            logger.info("=" * 50)
-            
-            # 1.1 Data
-            logger.info("Phase 1.1: Collecting Data")
-            filenames = list(config.datasets.pretrain_filenames[monkey_name].values())
-            pretrain_data, pretrain_val_data, pretrain_test_data = dataloader.get_multiple_sessions_data(filenames)
-
-            # 1.2 Initialize Model
-            logger.info("Phase 1.2: Initializing Model")
-            if pretrain_data is not None:
-                mean1, mean2 = compute_input_firing_rates(
-                    pretrain_data, config.datasets
-                )
-            else:
-                mean1 = None
-
-            model = get_model(
-                config.experiments, 
-                nb_inputs=nb_inputs, 
-                nb_outputs=nb_outputs,
-                nb_time_steps=nb_time_steps,
-                dt=dt,
-                dtype=dtype,
-                device=device,
-                input_firing_rates=(mean1, mean2),
-                max_delay = max_delay,
-                verbose=True
+        # 1.2 Initialize Model
+        logger.info("Phase 1.2: Initializing Model")
+        if pretrain_data is not None:
+            mean1, mean2 = compute_input_firing_rates(
+                pretrain_data, config.datasets
             )
-
-            # 1.3 Configure Model
-            logger.info("Phase 1.3: Configuring Model")
-            model = configure_model(
-                model,
-                config.experiments,
-                nb_time_steps=nb_time_steps,
-                dt=dt,
-                dtype=dtype,
-                seed=seed
-            )
-
-            # 1.4 Pretraining
-            logger.info(f"Phase 1.4: Pretraining On All {monkey_name.capitalize()} Sessions...")
-            model, history = train_validate_model(
-                model,
-                config.experiments,
-                pretrain_data,
-                pretrain_val_data,
-                nb_epochs = config.experiments.training.nb_epochs_pretrain,
-                verbose=True,
-                snapshot_prefix=output_dir/f"pretrained/{date}/{time}/pretrained_on_{monkey_name}_"
-            )
-
-            results = {}
-            for k, v in history.items():
-                if "val" in k :
-                    results[k] = v.tolist()
-                elif k == 'pos_logs':
-                    results[k] = v
-                else: 
-                    results["train_" + k] = v.tolist()
-
-            logger.info("Phase 1 Completed")
-
-            # Saving pretraining history in json file
-            logger.info("Saving Pretraining History")
-            converted_result = convert_np_float_to_float(results)
-            with open(output_dir/f"pretrained/{date}/{time}/pretraining_results_on_{monkey_name}.json", "w") as f:
-                json.dump(converted_result, f, indent=4)
-
-            # Saving pretrain model state
-            logger.info("Saving Pretrained Model State")
-            save_model_state(model, output_dir/f"pretrained/{date}/{time}/pretraining_on_{monkey_name}.pth")
-
-            pretrained_model = model.state_dict()
-
-        elif config.load_state[monkey_name]:
-            logger.info(f"Phase 1: Loading Pretrained Model For {monkey_name.capitalize()}")
-            logger.info("=" * 50)
-            pretrained_model = load_model_state(config.load_state[monkey_name])
-            logger.info("Model State Loaded.")
-
         else:
-            logger.info("No Pretraining or Model State Loaded.")
-            pretrained_model = None
+            mean1 = None
 
-        # CUDA BLOWN HERE   
-        clean_gpu()
-        
-    # ! Missinng some cleaning here
+        model = get_model(
+            config.experiments, 
+            nb_inputs=nb_inputs, 
+            nb_outputs=nb_outputs,
+            nb_time_steps=nb_time_steps,
+            dt=dt,
+            dtype=dtype,
+            device=device,
+            input_firing_rates=(mean1, mean2),
+            max_delay = max_delay,
+            verbose=True
+        )
 
+        # 1.3 Configure Model
+        logger.info("Phase 1.3: Configuring Model")
+        model = configure_model(
+            model,
+            config.experiments,
+            nb_time_steps=nb_time_steps,
+            dt=dt,
+            dtype=dtype,
+            seed=seed
+        )
+
+        # 1.4 Pretraining
+        logger.info(f"Phase 1.4: Pretraining On All {monkey_name.capitalize()} Sessions...")
+        model, history = train_validate_model(
+            model,
+            config.experiments,
+            pretrain_data,
+            pretrain_val_data,
+            nb_epochs = config.experiments.training.nb_epochs_pretrain,
+            verbose=True,
+            early_stop=config.experiments.training.early_stop,
+            patience=config.experiments.training.patience,
+            snapshot_prefix=output_dir/f"pretrained/{date}/{time}/pretrained_on_{monkey_name}_"
+        )
+
+        results = {}
+        for k, v in history.items():
+            if "val" in k :
+                results[k] = v.tolist()
+            elif k == 'pos_logs':
+                results[k] = v
+            else: 
+                results["train_" + k] = v.tolist()
+
+        logger.info("Phase 1 Completed")
+
+        # Saving pretraining history in json file
+        logger.info("Saving Pretraining History")
+        converted_result = convert_np_float_to_float(results)
+        with open(output_dir/f"pretrained/{date}/{time}/pretraining_results_on_{monkey_name}.json", "w") as f:
+            json.dump(converted_result, f, indent=4)
+
+        # Saving pretrain model state
+        logger.info("Saving Pretrained Model State")
+        save_model_state(model, output_dir/f"pretrained/{date}/{time}/pretraining_on_{monkey_name}.pth")
+
+        pretrained_model = model.state_dict()
+
+    elif config.load_state[monkey_name]:
+        logger.info(f"Phase 1: Loading Pretrained Model For {monkey_name.capitalize()}")
+        logger.info("=" * 50)
+        pretrained_model = load_model_state(config.load_state[monkey_name])
+        logger.info("Model State Loaded.")
+
+    else:
+        logger.info("No Pretraining or Model State Loaded.")
+        pretrained_model = None
+
+    # ! Test this when all done
+    # del pretrain_data
+    # del pretrain_val_data
+    # del pretrain_test_data
+    # del history
+    # del model
+
+    
+
+    # gc.collect()
+    # torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     main()
