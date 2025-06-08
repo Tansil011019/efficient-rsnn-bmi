@@ -1,7 +1,9 @@
 batchsize: 250
-# nb_epochs_train: 200
-nb_epochs_train: 1
-nb_epochs_pretrain: 100
+nb_epochs_train: 200
+nb_epochs_pretrain: 200
+
+early_stop: True
+patience: 10
 
 SG_beta: 20
 
@@ -16,7 +18,7 @@ nb_masked_timesteps: 20
 
 lr_scheduler: 'cosine' 
 lr: 2e-3
-lr_P: 0.01 # for delay position learning rate
+lr_P: 0.1 # for delay position learning rate
 
 optimizer: "SMORMS3"
 

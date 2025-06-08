@@ -26,9 +26,19 @@ class CSTLossStack(LossStack):
 
         # For each feature, calculate R2
         # We use the mean across all samples to calculate sst
+        # print(f"Target: {target}")
+        # print(f"Target Shape: {target.shape}")
+        # print(f"Prediction: {pred}")
+        # print(f"Prediction Shape: {pred.shape}")
         ssr = torch.sum((target - pred) ** 2, dim=(0, 1))
         sst = torch.sum((target - torch.mean(target, dim=(0, 1))) ** 2, dim=(0, 1))
+        # print(f"SSR: {ssr}")
+        # print(f"SSR Shape: {ssr.shape}")
+        # print(f"SST: {sst}")
+        # print(f"SST: {sst}")
         r2 = (1 - ssr / sst).detach().cpu().numpy()
+        # print(f"r2: {r2}")
+        # print(f"r2 Shape: {r2.shape}")
 
         return [float(r2[0].round(3)), float(r2[1].round(3)), float(r2.mean().round(3))]
 
@@ -50,7 +60,9 @@ class CSTLossStack(LossStack):
             weight = None
 
         self.metrics = self.get_R2(output, target)
-        return self.loss_fn(output, target, weight=weight)
+        result = self.loss_fn(output, target, weight=weight)
+        # print(f"Result: {result}")
+        return result
 
     def predict(self, output):
         return output
@@ -78,6 +90,10 @@ class RootMeanSquareError(CSTLossStack):
         self.loss_fn = self._weighted_RMSEloss
 
     def _weighted_RMSEloss(self, output, target, weight=None):
+        # print(f"Output: {output}")
+        # print(f"Output Shape: {output.shape}")
+        # print(f"Target: {target}")
+        # print(f"Target Shape: {target.shape}")
         if weight is not None:
             return torch.sqrt(torch.mean(weight * (output - target) ** 2))
         else:
@@ -105,3 +121,44 @@ class HuberLoss(CSTLossStack):
         super().__init__(mask=mask)
         self.loss_fn = nn.SmoothL1Loss(beta=delta)
         self.delta = delta
+
+class TeTLoss(CSTLossStack):
+    def __init__(self, means=1.0, lamb=1e-3, mask=None, density_weighting_func=False):
+        super().__init__(mask=mask, density_weighting_func=density_weighting_func)
+        self.means = means
+        self.lamb = lamb
+        self.mse = nn.MSELoss()
+        self.loss_fn = self._weighted_TeTLoss
+
+    def _rmse(self, output, target, weight=None):
+        if weight is not None:
+            return torch.sqrt(torch.mean(weight * (output - target) ** 2))
+        else:
+            return torch.sqrt(torch.mean((output - target) ** 2))
+    
+    def _weighted_TeTLoss(self, output, target, weight=None):
+        T = output.size(1) # time step
+        loss_tet = 0.0
+
+        # print(f"Output: {output}")
+        # print(f"Output Shape: {output.shape}")
+        # print(f"Target: {target}")
+        # print(f"Target Shape: {target.shape}")
+        # print(f"Weight: {weight}")
+        # print(f"Weight shape: {weight.shape}")
+        for t in range(T):
+            if weight: 
+                loss_tet += self._rmse(output[:, t], target[:, t], weight[:, t])
+            else:
+                loss_tet += self._rmse(output[:, t], target[:, t])  
+        loss_tet = loss_tet / T
+
+        if self.lamb > 0:
+            reg_target = torch.full_like(output, fill_value=self.means)
+            loss_reg = self.mse(output, reg_target)
+        else:
+            loss_reg = 0.0
+
+        total_loss = (1 - self.lamb) * loss_tet + self.lamb * loss_reg
+        # self.metrics = [float(loss_tet.item()), float(loss_reg.item()), float(total_loss.item())]
+        return total_loss

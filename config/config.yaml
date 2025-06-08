@@ -14,9 +14,7 @@ load_state:
   loco: False
   indy: False
 
-train_monkeys:
-  - indy
-  - loco
+train_monkey: indy # or loco
 
 seed: 42 # change this later
 
