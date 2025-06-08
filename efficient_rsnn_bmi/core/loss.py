@@ -1,5 +1,5 @@
 import torch
-from efficient_rsnn_bmi.base.loss import MeanSquareError, RootMeanSquareError, MeanAbsoluteError, HuberLoss
+from efficient_rsnn_bmi.base.loss import MeanSquareError, RootMeanSquareError, MeanAbsoluteError, HuberLoss, TeTLoss
 
 def _choose_loss(cfg):
 
@@ -11,6 +11,8 @@ def _choose_loss(cfg):
         loss_class = MeanAbsoluteError
     elif cfg.training.loss == "Huber":
         loss_class = HuberLoss
+    elif cfg.training.loss == "TeT":
+        loss_class = TeTLoss
     else:
         raise ValueError(f"Unknown loss: {cfg.training.loss}")
 
@@ -19,8 +21,14 @@ def _choose_loss(cfg):
 def get_train_loss(cfg, nb_time_steps):
 
     loss_class = _choose_loss(cfg)
+    args = {}
     
-    args = {}  
+    if cfg.training.loss == 'TeT':
+        args = {
+            **args,
+            'means': cfg.training.means_loss,
+            'lamb': cfg.training.lamb_loss
+        }
     
     # Mask early timesteps
     if cfg.training.mask_early_timesteps:
