@@ -6,6 +6,7 @@ from stork.models import (
 )
 import numpy as np
 from tqdm import tqdm
+import time
 
 from .rsnn import BaselineRecurrentSpikingModel
 
@@ -188,3 +189,78 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
             self.scheduler_instance.step()
 
         return np.mean(np.array(metrics), axis=0)
+    
+    def fit_validate(
+        self, dataset, valid_dataset, best_model_path=None, nb_epochs=10, verbose=True, wandb=None, early_stop=False, patience=10
+    ):
+        self.hist_train = []
+        self.hist_valid = []
+        self.wall_clock_time = []
+
+        assert early_stop and best_model_path is not None, "The best model path should not empty"
+
+        if early_stop:
+            epochs_no_improve = 0
+            best_val_loss = np.inf
+            best_model_path = best_model_path
+
+            print(f"Early stopping enabled with patience of {patience}. Best model will be saved to '{best_model_path}'")
+
+        for ep in range(nb_epochs):
+            t_start = time.time()
+            self.train()
+            ret_train = self.train_epoch(dataset)
+
+            self.train(False)
+            ret_valid = self.evaluate(valid_dataset)
+            self.hist_train.append(ret_train)
+            self.hist_valid.append(ret_valid)
+
+            # Early Stopping
+            current_val_loss = ret_valid[0]
+            if current_val_loss < best_val_loss:
+                best_val_loss  = current_val_loss
+                epochs_no_improve = 0
+                torch.save(self.state_dict(), best_model_path)
+                if verbose: print(f"Validation loss improved to {best_val_loss:.6f}. Saving model.")
+            else:
+                epochs_no_improve += 1
+                if verbose: print(f"Validation loss did not improve. Patience: {epochs_no_improve}/{patience}")
+
+            if self.wandb is not None:
+                self.wandb.log(
+                    {
+                        key: value
+                        for (key, value) in zip(
+                            self.get_metric_names()
+                            + self.get_metric_names(prefix="val_"),
+                            ret_train.tolist() + ret_valid.tolist(),
+                        )
+                    }
+                )
+
+            if verbose:
+                t_iter = time.time() - t_start
+                self.wall_clock_time.append(t_iter)
+                print(
+                    "%02i %s --%s t_iter=%.2f"
+                    % (
+                        ep,
+                        self.get_metrics_string(ret_train),
+                        self.get_metrics_string(ret_valid, prefix="val_"),
+                        t_iter,
+                    )
+                )
+
+            if epochs_no_improve >= patience:
+                print(f"\nEarly stopping triggered after {patience} epochs with no improvement.")
+                break
+
+        self.hist = np.concatenate(
+            (np.array(self.hist_train), np.array(self.hist_valid))
+        )
+        self.fit_runs.append(self.hist)
+        dict1 = self.get_metrics_history_dict(np.array(self.hist_train), prefix="")
+        dict2 = self.get_metrics_history_dict(np.array(self.hist_valid), prefix="val_")
+        history = {**dict1, **dict2}
+        return history
