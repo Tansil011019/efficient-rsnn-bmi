@@ -1,6 +1,7 @@
 defaults:
   - _self_
   - initializer: kaiming
+  # - initializer: fluctuation
   - model: synaps-delay
   - input: input-group-delay
   - neuron: custom-lif-group
@@ -11,6 +12,7 @@ defaults:
   - connection_delay: connection-delay
 
 name: synaps-delay
+initializer_name: kaiming
 
 nb_hidden: 1
 hidden_size: [64]
@@ -29,4 +31,4 @@ nb_workers: 2
 # Maximum Delay
 max_delays: 0.1 # in seconds
 
-device: "cuda"
+device: "cuda:1"

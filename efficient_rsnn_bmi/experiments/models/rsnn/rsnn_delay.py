@@ -175,6 +175,8 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
             other_param = []
 
             for name, param in self.named_parameters():
+                if "SIG" in name and param.requires_grad:
+                    param.requires_grad = False
                 if param.requires_grad:
                     if 'P' in name:
                         delay_pos_param.append(param)

@@ -16,7 +16,7 @@ def get_initializers(
         max_delay=None,
         dtype=torch.float32
     ):
-    if config.name == 'synaps-delay' and max_delay is not None:
+    if config.initializer_name == 'kaiming' and max_delay is not None:
         hidden_init = instantiate(
             config.initializer,
             sig_init=max_delay // 2,

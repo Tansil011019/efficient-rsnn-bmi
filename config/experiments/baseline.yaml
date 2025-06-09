@@ -10,6 +10,7 @@ defaults:
   - connection: connection
 
 name: baseline
+initializer_name: fluctuation
 
 # Hidden Layer
 nb_hidden: 1
@@ -29,4 +30,4 @@ stochastic: False
 
 nb_workers: 2
 
-device: "cuda"
+device: "cuda:1"

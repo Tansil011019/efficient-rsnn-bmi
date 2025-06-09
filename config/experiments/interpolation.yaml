@@ -10,6 +10,7 @@ defaults:
   - connection: connection
 
 name: interpolation
+initializer_name: fluctuation
 
 nb_hidden: 1
 hidden_size: [64]
@@ -26,4 +27,4 @@ stochastic: False
 
 nb_workers: 2
 
-device: "cuda:1"
+device: "cuda"

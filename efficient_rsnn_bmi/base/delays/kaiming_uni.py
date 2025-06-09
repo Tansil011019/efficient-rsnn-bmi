@@ -32,7 +32,6 @@ class KaimingUniformInitializer(Initializer):
         init.constant_(connection.op.SIG, self.sig_init)
         connection.op.SIG.requires_grad = False
 
-
     def initialize_connection(self, connection):
         weights = self._get_weights(connection)
         if (self.verbose):
