@@ -16,6 +16,17 @@ load_state:
 
 train_monkey: indy # or loco
 
+eval_data: indy_20170131_02.mat
+# eval_data: indy_20160630_01.mat
+# eval_data: indy_20160622_01.mat
+
+eval_model: /home/cc/efficient-rsnn-bmi/pretrained_models/synaps-delay/synapse_delay.pth
+# eval_model: /home/cc/efficient-rsnn-bmi/pretrained_models/baselines/baseline.pth
+# eval_model: /home/cc/efficient-rsnn-bmi/pretrained_models/interpolations/2_keys_interpolation.pth
+# eval_model: /home/cc/efficient-rsnn-bmi/pretrained_models/interpolations/8_keys_interpolation.pth
+# eval_model: /home/cc/efficient-rsnn-bmi/pretrained_models/baselines/tet_baseline.pth
+# eval_model: /home/cc/efficient-rsnn-bmi/pretrained_models/synaps-delay/tet_synaps_delay.pth
+
 seed: 42 # change this later
 
 hydra:

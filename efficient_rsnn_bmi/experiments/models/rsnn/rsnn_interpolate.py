@@ -7,6 +7,7 @@ from stork.models import (
 import numpy as np
 from tqdm import tqdm
 import time
+import json
 
 from .rsnn import BaselineRecurrentSpikingModel
 
@@ -88,9 +89,17 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
         self.reset_states(cur_batch_size)
         self.input_group.feed_data(x_batch) #[250, 500, 96]
         lower_bounds = []
+        # step_logs = {
+        #     "interpolated": []
+        # }
         for t in range(0, self.nb_time_steps, self.n_keys): # the interpolation change here
             stork.nodes.base.CellGroup.clk = t
             self.forward_interpolation(t, lower_bounds=lower_bounds, record=record)
+            # if t == 10:
+            #     print(f"t={t}, lower_bounds={len(lower_bounds)}")
+            #     with open ("interpolated_step_logs.json", "w") as f:
+            #         f.write(json.dumps(step_logs, indent=4))
+                # step_logs = None
 
         # for the left over
         max_t = self.nb_time_steps - 1
@@ -105,11 +114,21 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
         device = A.device
         alphas = torch.linspace(0, 1, n_steps+1, device=device).view(-1, 1, 1)
 
-        interpolated = torch.lerp(A, B, alphas)
+        interpolated = torch.lerp(A, B, alphas.to(self.dtype))
 
         return interpolated # it should be (n_steps + 1, 250, 64)
+
+    # def exp_interpolate(self, A, B, n_steps):
+    #     device = A.device
+    #     alphas = torch.linspace(0, 1, n_steps+1, device=device)
+    #     exp_alphas = (exp_base ** raw_alphas - 1) / (exp_base - 1)
+    #     alphas = alphas / alphas[-1]
+
+    #     interpolated = torch.lerp(A, B, alphas.to(self.dtype))
+
+    #     return interpolated
     
-    def forward_interpolation(self, t, key=None, lower_bounds=[], record=False):
+    def forward_interpolation(self, t, key=None, lower_bounds=[], record=False, step_logs=None):
         keys = key if key else self.n_keys
         if keys == 1:
                 self.evolve_all()
@@ -132,6 +151,12 @@ class InterpolateRecurrentSpikingModel(BaselineRecurrentSpikingModel):
                     upper_bound = g.input.clone()
 
                     interpolation = self.interpolate(lower_bound, upper_bound, keys)
+                    # if step_logs is not None:
+                    #     step_logs['interpolated'].append({
+                    #         't': t,
+                    #         'group': g.name,
+                    #         'interpolation': interpolation.detach().cpu().numpy().tolist()
+                    #     })
                     g.states['input'] = interpolation[1].clone()
                     g.input = g.states['input'] # change the input to current interpolation time step
 

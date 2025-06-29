@@ -321,3 +321,22 @@ class DelayRecurrentSpikingModel(RecurrentSpikingModel):
             **dict1, **dict2, "pos_logs": self.pos_logs
         }
         return history
+    
+    def predict(self, data, train_mode=False):
+        self.train(train_mode)
+        # print(type(data))
+        # print(len(data))
+        # print(data.shape)
+        if type(data) in [torch.Tensor, np.ndarray]:
+            output = self.forward_pass(data, cur_batch_size=len(data))
+            output = output[:, :data.shape[1], :]
+            pred = self.loss_stack.predict(output)
+            return pred
+        else:
+            self.prepare_data(data)
+            pred = []
+            for local_X, _ in self.data_generator(data, shuffle=False):
+                data_local = local_X.to(self.device)
+                output = self.forward_pass(data_local, cur_batch_size=len(local_X))
+                pred.append(self.loss_stack.predict(output).detach().cpu())
+            return torch.cat(pred, dim=0)

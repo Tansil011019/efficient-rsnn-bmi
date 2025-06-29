@@ -1,0 +1,11 @@
+{
+    "Footprint": 61960,
+    "ConnectionSparsity": 0.0,
+    "R2": 0.691716730594635,
+    "ActivationSparsity": 0.9870757756653133,
+    "SynapticOperations": {
+        "Effective_MACs": 0.0,
+        "Effective_ACs": 138.2005122603488,
+        "Dense": 477.0431202681834
+    }
+}

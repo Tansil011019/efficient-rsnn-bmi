@@ -176,3 +176,5 @@ data/datasets/
 *.pth
 *.png
 states/
+# notebooks/
+notebooks/cached_data/

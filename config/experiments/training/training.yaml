@@ -12,10 +12,10 @@ LB_L2_thresh: 1e-3
 UB_L2_strength: 0.01
 UB_L2_thresh: 10  
 
-# loss: "RMSE"     
-loss: "TeT"
-means_loss: 1.0
-lamb_loss: 1e-3
+loss: "RMSE"     
+# loss: "TeT"
+# means_loss: 1.0
+# lamb_loss: 1e-3
 mask_early_timesteps: False
 nb_masked_timesteps: 20
 

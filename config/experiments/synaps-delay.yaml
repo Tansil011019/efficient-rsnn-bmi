@@ -29,6 +29,7 @@ stochastic: False
 nb_workers: 2
 
 # Maximum Delay
-max_delays: 0.1 # in seconds
+# max_delays: 0.1 # in seconds
+max_delays: 0.05
 
 device: "cuda:1"

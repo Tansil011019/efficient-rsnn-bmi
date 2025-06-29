@@ -117,6 +117,8 @@ class CustomDelayConnection(BaseConnection):
             preact = F.pad(preact, (self.left_padding, self.right_padding), 'replicate')
         # print(f"Preactivation after padding: {preact[0][0]}")
         # print(f"Preactivation after padding shape: {preact.shape}")
+        preact = preact.to(self.dtype)
+        # print(f"Preact Type: {preact.dtype}")
         conv_out = self.op(preact) # (batch size, channels = 64, time step = 13)
         # print(f"Convolutional Out: {conv_out[0][0]}")
         # print(f"Convolutional out shape: {conv_out.shape}")

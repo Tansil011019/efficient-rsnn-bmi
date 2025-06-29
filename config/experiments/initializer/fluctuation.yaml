@@ -1,5 +1,4 @@
 _target_: stork.initializers.FluctuationDrivenCenteredNormalInitializer
-
 sigma_u: 0.5
 nu: 20
 alpha: 0.9

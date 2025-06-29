@@ -1,4 +1,5 @@
-_target_: efficient_rsnn_bmi.experiments.models.rsnn.rsnn_interpolate.InterpolateRecurrentSpikingModel
+# _target_: efficient_rsnn_bmi.experiments.models.rsnn.rsnn_interpolate.InterpolateRecurrentSpikingModel
+_target_: efficient_rsnn_bmi.experiments.models.rsnn.rsnn_interpolate_out.InterpolateOutRecurrentSpikingModel
 
 # For the interpolation
-n_keys: 8 # from the paper
+n_keys: 2 # from the paper  

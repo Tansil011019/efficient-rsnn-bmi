@@ -4,6 +4,8 @@ import torch
 
 from stork.models import RecurrentSpikingModel
 from tqdm import tqdm
+import stork
+import json
 
 class BaselineRecurrentSpikingModel(RecurrentSpikingModel):
     """
@@ -241,3 +243,41 @@ class BaselineRecurrentSpikingModel(RecurrentSpikingModel):
         dict2 = self.get_metrics_history_dict(np.array(self.hist_valid), prefix="val_")
         history = {**dict1, **dict2}
         return history
+
+    def run(self, x_batch, cur_batch_size=None, record=False):
+        if cur_batch_size is None:
+            cur_batch_size = len(x_batch)
+        self.reset_states(cur_batch_size)
+        self.input_group.feed_data(x_batch)
+        step_logs = {
+            'baseline': []
+        }
+        for t in range(self.nb_time_steps):
+            stork.nodes.base.CellGroup.clk = t
+            self.evolve_all(step_logs=step_logs) # Assume this part is true
+            self.propagate_all()
+            self.execute_all()
+
+            if t == 10: 
+                print(step_logs)
+                with open("baseline_step_logs.json", "w") as f:
+                    json.dump(step_logs, f, indent=4)
+            if record:
+                self.monitor_all()
+        self.out = self.output_group.get_out_sequence()
+        return self.out
+
+    # def evolve_all(self, step_logs=None):
+    #     for g in self.groups:
+    #         # print(f"Current group: {g}")
+    #         # print(f"Current group input: {g.input}")
+    #         # print(f"Current group all zero: {torch.all(g.input == 0)}")
+    #         # print(f"Current group input shape: {g.input.shape}")
+    #         input_clone = g.input.clone()
+    #         step_logs['baseline'].append({
+    #             't': stork.nodes.base.CellGroup.clk,
+    #             'group': g.name,
+    #             'input': input_clone.cpu().numpy().tolist(),
+    #         })
+    #         g.evolve()
+    #         g.clear_input()

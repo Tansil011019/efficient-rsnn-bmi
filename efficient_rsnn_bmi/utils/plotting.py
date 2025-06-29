@@ -8,6 +8,7 @@ from scipy.signal import find_peaks
 
 import stork
 from stork.plotting import add_xscalebar
+from efficient_rsnn_bmi.experiments.models.rsnn.rsnn_interpolate import InterpolateRecurrentSpikingModel
 
 # prevent matplotlib from spamming the console
 import logging
@@ -176,7 +177,7 @@ def plot_activity_CST(
     print("Evaluation Score:", scores)
 
     inp = model.input_group.get_flattened_out_sequence().detach().cpu().numpy()
-    if hasattr(model, "n_keys"):
+    if isinstance(model, InterpolateRecurrentSpikingModel):
         # this is the interpolation one
         batch_size, reduced_T, units = inp.shape
         full_T = model.nb_time_steps  # e.g., 500
